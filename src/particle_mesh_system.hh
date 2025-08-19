@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <array>
-#include "fftw3f_interface.hh"
+#include "fftw3f_util.hh"
 #include "fftw3f_allocator.hh"
 #include "grid_constants.hh"
 #include "time_logger.hh"
@@ -30,5 +30,5 @@ private:
 	std::vector<fftwf_complex, fftwf_allocator<fftwf_complex>> fMass; 	// fftw3 float32 complex type - used in DFTs
 	std::vector<std::array<short int,3>> fft_i;							// triple short int index for fft  (NGRID * NGRID * NGRID_HALF)
 	std::vector<std::array<short int,3>> grid_i;						// triple short int index for grid (NGRID * NGRID * NGRID)
-	FFTW3FInterface fft_plans;											// struct containing fftw3 plans	
+	std::unique_ptr<fft_util::Plans> fft_plans;							// struct containing fftw3 plans
 };

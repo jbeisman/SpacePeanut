@@ -27,7 +27,7 @@ ParticleMeshSystem::ParticleMeshSystem(
 
 ParticleMeshSystem::~ParticleMeshSystem()
 { 
-	fft_plans.destroy_plans();
+	fft_util::destroy_plans(fft_plans.get());
 }
 
 
@@ -37,7 +37,7 @@ void ParticleMeshSystem::initialize_system(
 	const float time_scale)
 {
 	// Set plans for FFTW3 foward and backward 3D DFTs
-	fft_plans.create_plans(grid.NGRID, gMass.data(), gPot.data(), fMass.data());
+	fft_plans = fft_util::create_plans(grid.NGRID, gMass.data(), gPot.data(), fMass.data());
 
 	// Initialize grid utilities
 	CIC::set_grid(grid.NGRID, grid.GMAX);
@@ -126,7 +126,7 @@ void ParticleMeshSystem::get_acceleration(
 	timer.end("compute_grid_mass_distribution", true);
 
 	timer.start("compute_grid_potential");
-	compute_grid_potential(grid, fft_plans, time_scale, fft_i, fMass, gPot);
+	compute_grid_potential(grid, fft_plans.get(), time_scale, fft_i, fMass, gPot);
 	timer.end("compute_grid_potential", true);
 
 	timer.start("compute_grid_acceleration");

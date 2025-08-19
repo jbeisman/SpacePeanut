@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <array>
-#include "fftw3f_interface.hh"
 #include "fftw3f_allocator.hh"
 
 

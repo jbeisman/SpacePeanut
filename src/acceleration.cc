@@ -34,7 +34,7 @@ void compute_grid_mass_distribution(
 
 void compute_grid_potential(
 	const GridConst& grid,
-	const FFTW3FInterface& fft_plans,
+	const fft_util::Plans *fft_plans,
 	const float time_scale,
 	const std::vector<std::array<short int,3>>& fft_i,
 	std::vector<fftwf_complex, fftwf_allocator<fftwf_complex>>& fMass,
@@ -47,14 +47,14 @@ void compute_grid_potential(
 	assign_vec(gPot, 0.0f);
     
     // Transform density field to Fourier space with forward DFT
-    fftwf_execute(fft_plans.r2c_plan);
+    fftwf_execute(fft_plans->r2c_plan);
  
 	// Compute potential field by solving Poisson's equation in Fourier space
 	const float kfac = std::numbers::pi_v<float> * std::numbers::pi_v<float> * 4.0 / (grid.GMAX * grid.GMAX);
 	compute_grid_potential_par(NG, NGH, kfac, fft_i, fMass.data());
 
     // Transform potential field to real space with inverse DFT
-    fftwf_execute(fft_plans.c2r_plan);
+    fftwf_execute(fft_plans->c2r_plan);
 
     // Normalize the potential field after inverse DFT
     const float normfactor = 4.0 * G() * std::numbers::pi_v<float> / (time_scale * (float)(NG * NG * NG));

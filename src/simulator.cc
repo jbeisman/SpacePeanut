@@ -1,13 +1,13 @@
 
 #include <iostream>
-#include "fftw3f_interface.hh"
+#include "fftw3f_util.hh"
 #include "utils.hh"
 #include "get_input.hh"
 #include "simulator.hh"
 	
 ParticleMeshSimulator::ParticleMeshSimulator()
 { 
-	FFTW3FInterface::init_fftw3f();
+	fft_util::init_fftw3f();
 	auto [npart, ngrid, nstep, gmax, redshift] = get_input();
 	pm_system = std::make_unique<ParticleMeshSystem>(npart, ngrid, gmax);
 	space_time = std::make_unique<CosmicTime>(redshift, nstep);
@@ -16,7 +16,7 @@ ParticleMeshSimulator::ParticleMeshSimulator()
 
 ParticleMeshSimulator::~ParticleMeshSimulator()
 { 
-	FFTW3FInterface::cleanup_fftw3f();
+	fft_util::cleanup_fftw3f();
 }
 
 

@@ -4,7 +4,7 @@
 #include <vector>
 #include <array>
 #include "grid_constants.hh"
-#include "fftw3f_interface.hh"
+#include "fftw3f_util.hh"
 #include "fftw3f_allocator.hh"
 
 
@@ -23,7 +23,7 @@ void compute_grid_mass_distribution(
 
 void compute_grid_potential(
 	const GridConst& grid,
-	const FFTW3FInterface& fft_plans,
+	const fft_util::Plans *fft_plans,
 	const float time_scale,
 	const std::vector<std::array<short int,3>>& fft_i,
 	std::vector<fftwf_complex, fftwf_allocator<fftwf_complex>>& fMass,

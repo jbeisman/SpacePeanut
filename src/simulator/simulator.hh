@@ -63,3 +63,10 @@ private:
 	int delay_ms{0};
 };
 
+
+// TODO -  improve and move
+void write_points(
+	const int filenum,
+	const std::vector<std::array<float, 3>>& Pos,
+	const std::vector<std::array<float, 3>>& Vel,
+	const float time_scale);

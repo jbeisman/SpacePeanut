@@ -8,8 +8,8 @@ mkdir -p "install"
 mkdir "build" ; cd "build"
 cmake ..\
     -DCMAKE_INSTALL_PREFIX:FILEPATH=${ORIGIN_DIR}/install \
-    -DUSE_STD_PARALLEL:BOOL=ON \
-    -DUSE_OPENMP:BOOL=OFF \
+    -DUSE_STD_PARALLEL:BOOL=OFF \
+    -DUSE_OPENMP:BOOL=ON \
     -DCMAKE_BUILD_TYPE:STRING=Release
 make -j4 VERBOSE=1
 make install

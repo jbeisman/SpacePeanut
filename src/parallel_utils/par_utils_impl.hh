@@ -1,4 +1,6 @@
 
+#pragma once
+
 // declarations of backend interface functions
 template <typename T>
 void assign_vec_par(

@@ -1,6 +1,6 @@
 
 #include "periodic_boundary.hh"
-
+#include "periodic_boundary_impl.hh"
 
 // Periodic wrap for particle positions
 void enforce_periodic_boundary_conditions(

@@ -2,7 +2,7 @@
 #include <vector>
 #include <array>
 #include <omp.h>
-#include "periodic_boundary.hh"
+#include "periodic_boundary_impl.hh"
 
 
 void enforce_periodic_boundary_conditions_par(

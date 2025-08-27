@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
 project(SpacePeanut CXX)
 
@@ -21,6 +21,8 @@ else()
 endif()
 
 # Set RPATH
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 # Set compiler definitions
@@ -32,7 +34,8 @@ if (USE_OPENMP)
   add_compile_definitions (USE_OPENMP)
 endif()
 
-## Global compiler flags
+# Global compilation options
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-ffast-math)
 
 # Location of user-provided CMake modules

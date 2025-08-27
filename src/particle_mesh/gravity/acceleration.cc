@@ -23,7 +23,7 @@ void compute_grid_mass_distribution(
 	const std::vector<std::array<float, 3>>& pPos,
 	std::vector<float, fftwf_allocator<float>>& gMass)
 {
-	const float CVOL_INV = grid.CVOL_INV;
+	const float CVOL_INV = 1.0 / (grid.CLEN * grid.CLEN * grid.CLEN);
 
 	// Set grid mass to 0.0
 	assign_vec(gMass, 0.0f);

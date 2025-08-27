@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <array>
-#include "grid_constants.hh"
+#include "grid_utils.hh"
 #include "fftw3f_util.hh"
 #include "fftw3f_allocator.hh"
 

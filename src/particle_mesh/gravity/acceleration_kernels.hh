@@ -18,17 +18,17 @@ inline void kernel_grid_mass_CIC(
 	float* gMD)
 {	
 	// Get cloud-in-cell weights (6 float) and indices (3 int) 
-	auto [fX, fY, fZ, fXX, fYY, fZZ, iX, iY, iZ] = CIC::get_weights_and_indices(pos);
+	auto [fX, fY, fZ, fXX, fYY, fZZ, iX, iY, iZ] = GridCIC::get_weights_and_indices(pos);
 	// Distribute particle mass to 8 grid cells in stencil
 	// 10.0 represents constant mass   TODO -- improve mass handling 
-	gMD[IDX::flatten(iX,   iY,   iZ  )] += (10.0 * fX  * fY  * fZ  * CVOL_INV);
-	gMD[IDX::flatten(iX+1, iY,   iZ  )] += (10.0 * fXX * fY  * fZ  * CVOL_INV);
-	gMD[IDX::flatten(iX,   iY+1, iZ  )] += (10.0 * fX  * fYY * fZ  * CVOL_INV);
-	gMD[IDX::flatten(iX,   iY,   iZ+1)] += (10.0 * fX  * fY  * fZZ * CVOL_INV);
-	gMD[IDX::flatten(iX+1, iY+1, iZ  )] += (10.0 * fXX * fYY * fZ  * CVOL_INV);
-	gMD[IDX::flatten(iX+1, iY,   iZ+1)] += (10.0 * fXX * fY  * fZZ * CVOL_INV);
-	gMD[IDX::flatten(iX,   iY+1, iZ+1)] += (10.0 * fX  * fYY * fZZ * CVOL_INV);
-	gMD[IDX::flatten(iX+1, iY+1, iZ+1)] += (10.0 * fXX * fYY * fZZ * CVOL_INV);
+	gMD[GridIDX::flatten(iX,   iY,   iZ  )] += (10.0 * fX  * fY  * fZ  * CVOL_INV);
+	gMD[GridIDX::flatten(iX+1, iY,   iZ  )] += (10.0 * fXX * fY  * fZ  * CVOL_INV);
+	gMD[GridIDX::flatten(iX,   iY+1, iZ  )] += (10.0 * fX  * fYY * fZ  * CVOL_INV);
+	gMD[GridIDX::flatten(iX,   iY,   iZ+1)] += (10.0 * fX  * fY  * fZZ * CVOL_INV);
+	gMD[GridIDX::flatten(iX+1, iY+1, iZ  )] += (10.0 * fXX * fYY * fZ  * CVOL_INV);
+	gMD[GridIDX::flatten(iX+1, iY,   iZ+1)] += (10.0 * fXX * fY  * fZZ * CVOL_INV);
+	gMD[GridIDX::flatten(iX,   iY+1, iZ+1)] += (10.0 * fX  * fYY * fZZ * CVOL_INV);
+	gMD[GridIDX::flatten(iX+1, iY+1, iZ+1)] += (10.0 * fXX * fYY * fZZ * CVOL_INV);
 }
 
 
@@ -68,9 +68,9 @@ inline void kernel_grid_accel(
 	const float* gP,
 	std::array<float, 3>& gA)
 {
-	gA[0] = dnom * (gP[IDX::flatten(i-2,j,k)] - 8*gP[IDX::flatten(i-1,j,k)] + 8*gP[IDX::flatten(i+1,j,k)] - gP[IDX::flatten(i+2,j,k)]);
-	gA[1] = dnom * (gP[IDX::flatten(i,j-2,k)] - 8*gP[IDX::flatten(i,j-1,k)] + 8*gP[IDX::flatten(i,j+1,k)] - gP[IDX::flatten(i,j+2,k)]);
-	gA[2] = dnom * (gP[IDX::flatten(i,j,k-2)] - 8*gP[IDX::flatten(i,j,k-1)] + 8*gP[IDX::flatten(i,j,k+1)] - gP[IDX::flatten(i,j,k+2)]);
+	gA[0] = dnom * (gP[GridIDX::flatten(i-2,j,k)] - 8*gP[GridIDX::flatten(i-1,j,k)] + 8*gP[GridIDX::flatten(i+1,j,k)] - gP[GridIDX::flatten(i+2,j,k)]);
+	gA[1] = dnom * (gP[GridIDX::flatten(i,j-2,k)] - 8*gP[GridIDX::flatten(i,j-1,k)] + 8*gP[GridIDX::flatten(i,j+1,k)] - gP[GridIDX::flatten(i,j+2,k)]);
+	gA[2] = dnom * (gP[GridIDX::flatten(i,j,k-2)] - 8*gP[GridIDX::flatten(i,j,k-1)] + 8*gP[GridIDX::flatten(i,j,k+1)] - gP[GridIDX::flatten(i,j,k+2)]);
 }
 
 
@@ -81,17 +81,17 @@ inline void kernel_part_accel_CIC(
 	std::array<float, 3>& pA)
 {
 	// Get cloud-in-cell weights (6 float) and indices (3 int) 
-	auto [fX, fY, fZ, fXX, fYY, fZZ, iX, iY, iZ] = CIC::get_weights_and_indices(pos);
+	auto [fX, fY, fZ, fXX, fYY, fZZ, iX, iY, iZ] = GridCIC::get_weights_and_indices(pos);
 	// Collect accelerations from 8 grid cells in stencil
 	for (int j = 0; j < 3; j++) {
-		pA[j]  = gA[IDX::flatten(iX,   iY,   iZ  )][j] * fX  * fY  * fZ;
-		pA[j] += gA[IDX::flatten(iX+1, iY,   iZ  )][j] * fXX * fY  * fZ;
-		pA[j] += gA[IDX::flatten(iX,   iY+1, iZ  )][j] * fX  * fYY * fZ;
-		pA[j] += gA[IDX::flatten(iX,   iY,   iZ+1)][j] * fX  * fY  * fZZ;
-		pA[j] += gA[IDX::flatten(iX+1, iY+1, iZ  )][j] * fXX * fYY * fZ;
-		pA[j] += gA[IDX::flatten(iX+1, iY,   iZ+1)][j] * fXX * fY  * fZZ;
-		pA[j] += gA[IDX::flatten(iX,   iY+1, iZ+1)][j] * fX  * fYY * fZZ;
-		pA[j] += gA[IDX::flatten(iX+1, iY+1, iZ+1)][j] * fXX * fYY * fZZ;
+		pA[j]  = gA[GridIDX::flatten(iX,   iY,   iZ  )][j] * fX  * fY  * fZ;
+		pA[j] += gA[GridIDX::flatten(iX+1, iY,   iZ  )][j] * fXX * fY  * fZ;
+		pA[j] += gA[GridIDX::flatten(iX,   iY+1, iZ  )][j] * fX  * fYY * fZ;
+		pA[j] += gA[GridIDX::flatten(iX,   iY,   iZ+1)][j] * fX  * fY  * fZZ;
+		pA[j] += gA[GridIDX::flatten(iX+1, iY+1, iZ  )][j] * fXX * fYY * fZ;
+		pA[j] += gA[GridIDX::flatten(iX+1, iY,   iZ+1)][j] * fXX * fY  * fZZ;
+		pA[j] += gA[GridIDX::flatten(iX,   iY+1, iZ+1)][j] * fX  * fYY * fZZ;
+		pA[j] += gA[GridIDX::flatten(iX+1, iY+1, iZ+1)][j] * fXX * fYY * fZZ;
 	}
 }
 

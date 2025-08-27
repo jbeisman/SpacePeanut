@@ -5,7 +5,7 @@
 #include <array>
 #include "fftw3f_util.hh"
 #include "fftw3f_allocator.hh"
-#include "grid_constants.hh"
+#include "grid_utils.hh"
 #include "time_logger.hh"
 
 class ParticleMeshSystem {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
 # List of source files
 set(PM_GRAV_CC_FILES
@@ -6,10 +6,8 @@ set(PM_GRAV_CC_FILES
 )
 
 # List of header files
-set(PM_GRAV_HH_FILES
+set(PM_GRAV_PUBLIC_HH_FILES
 	acceleration.hh
-	acceleration_kernels.hh
-	acceleration_par.hh
 )
 
 if(USE_STD_PARALLEL)
@@ -21,9 +19,9 @@ if(USE_OPENMP)
 endif()
 
 add_library(pm_gravity SHARED)
-target_sources(pm_gravity PUBLIC ${PM_GRAV_CC_FILES} ${PM_GRAV_HH_FILES})
-set_target_properties(pm_gravity PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib" LINKER_LANGUAGE CXX)
-target_link_libraries(pm_gravity PUBLIC fft_utils par_utils grid_utils boundary_cond PRIVATE ${FFTWF_LIBRARIES})
+
+target_sources(pm_gravity PRIVATE ${PM_GRAV_CC_FILES})
+target_sources(pm_gravity PUBLIC FILE_SET HEADERS FILES ${PM_GRAV_PUBLIC_HH_FILES})
 
 if(USE_STD_PARALLEL)
 	target_link_libraries(pm_gravity PRIVATE TBB::tbb)
@@ -33,4 +31,6 @@ if(USE_OPENMP)
 	target_link_libraries(pm_gravity PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_include_directories(pm_gravity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(pm_gravity PRIVATE fft_utils par_utils grid_utils ${FFTWF_LIBRARIES})
+
+install(TARGETS pm_gravity FILE_SET HEADERS)

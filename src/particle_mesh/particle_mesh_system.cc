@@ -40,11 +40,11 @@ void ParticleMeshSystem::initialize_system(
 	fft_plans = fft_util::create_plans(grid.NGRID, gMass.data(), gPot.data(), fMass.data());
 
 	// Initialize grid utilities
-	CIC::set_grid(grid.NGRID, grid.GMAX);
-	IDX::set_grid(grid.NGRID);
+	GridCIC::set_grid(grid.NGRID, grid.GMAX);
+	GridIDX::set_grid(grid.NGRID);
 	
 	// Set random position and velocity perturbation
-	initialize_random(pPos, grid.GMIN, grid.GMAX);
+	initialize_random(pPos, 0.0f, grid.GMAX);
 	initialize_random(pVel, vmin, vmax);
 
 	// Set pre-formed triplets for iterating with std parallel

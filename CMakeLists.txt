@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Add user options
-option(USE_OPENMP "Enable OpenMP parallelization" ON)
+## These are set in CMakePresets.json
+option(USE_OPENMP "Enable OpenMP parallelization" OFF)
 option(USE_STD_PARALLEL "Enable C++ std::execution parallelization" OFF)
 
 # IMPORTANT -- this needs to stay toward the top of CMake tree
@@ -33,10 +34,6 @@ endif()
 if (USE_OPENMP)
   add_compile_definitions (USE_OPENMP)
 endif()
-
-# Global compilation options
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-add_compile_options(-ffast-math)
 
 # Location of user-provided CMake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

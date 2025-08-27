@@ -1,0 +1,192 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "Release-omp",
+      "displayName": "Release build with OpenMP shared memory CPU parallelism",
+      "description": "Configures the project with a release build type and OpenMP execution.",
+      "binaryDir": "${sourceDir}/build/rel-omp",
+      "installDir": "${sourceDir}/install/rel-omp",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_INIT": "-ffast-math -Wall -Wextra -Wpedantic",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "USE_OPENMP": "ON",
+        "USE_STD_PARALLEL": "OFF"
+      }
+    },
+    {
+      "name": "Release-std",
+      "displayName": "Release build with C++ std shared memory CPU parallelism",
+      "description": "Configures the project with a release build type and C++ parallel execution.",
+      "binaryDir": "${sourceDir}/build/rel-std",
+      "installDir": "${sourceDir}/install/rel-std",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_INIT": "-ffast-math -Wall -Wextra -Wpedantic",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "USE_OPENMP": "OFF",
+        "USE_STD_PARALLEL": "ON"
+      }
+    },
+    {
+      "name": "Debug-omp",
+      "displayName": "Debug build with OpenMP shared memory CPU parallelism",
+      "description": "Configures the project with a debug build type and OpenMP execution.",
+      "binaryDir": "${sourceDir}/build/dbg-omp",
+      "installDir": "${sourceDir}/install/dbg-omp",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS_INIT": "-ffast-math -Wall -Wextra -Wpedantic",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "USE_OPENMP": "ON",
+        "USE_STD_PARALLEL": "OFF"
+      }
+    },
+    {
+      "name": "Debug-std",
+      "displayName": "Debug build with C++ std shared memory CPU parallelism",
+      "description": "Configures the project with a debug build type and C++ parallel execution.",
+      "binaryDir": "${sourceDir}/build/dbg-std",
+      "installDir": "${sourceDir}/install/dbg-std",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS_INIT": "-ffast-math -Wall -Wextra -Wpedantic",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "USE_OPENMP": "OFF",
+        "USE_STD_PARALLEL": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Release-omp-build",
+      "displayName": "build Release-omp",
+      "configurePreset": "Release-omp"
+    },
+    {
+      "name": "Release-omp-install",
+      "displayName": "install Release-omp",
+      "configurePreset": "Release-omp",
+      "targets": ["install"]
+    },
+
+    {
+      "name": "Release-std-build",
+      "displayName": "build Release-std",
+      "configurePreset": "Release-std"
+    },
+    {
+      "name": "Release-std-install",
+      "displayName": "install Release-std",
+      "configurePreset": "Release-std",
+      "targets": ["install"]
+    },
+        {
+      "name": "Debug-omp-build",
+      "displayName": "build Debug-omp",
+      "configurePreset": "Debug-omp"
+    },
+    {
+      "name": "Debug-omp-install",
+      "displayName": "install Debug-omp",
+      "configurePreset": "Debug-omp",
+      "targets": ["install"]
+    },
+
+    {
+      "name": "Debug-std-build",
+      "displayName": "build Debug-std",
+      "configurePreset": "Debug-std"
+    },
+    {
+      "name": "Debug-std-install",
+      "displayName": "install Debug-std",
+      "configurePreset": "Debug-std",
+      "targets": ["install"]
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "install-rel-omp",
+      "displayName": "install Release-omp",
+      "description": "Configures, builds, and installs Release-omp.",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "Release-omp"
+        },
+        {
+          "type": "build",
+          "name": "Release-omp-build"
+        },
+        {
+          "type": "build",
+          "name": "Release-omp-install"
+        }
+      ]
+    },
+    {
+      "name": "install-rel-std",
+      "displayName": "install Release-std",
+      "description": "Configures, builds, and installs Release-std.",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "Release-std"
+        },
+        {
+          "type": "build",
+          "name": "Release-std-build"
+        },
+        {
+          "type": "build",
+          "name": "Release-std-install"
+        }
+      ]
+    },
+    {
+      "name": "install-dbg-omp",
+      "displayName": "install Debug-omp",
+      "description": "Configures, builds, and installs Debug-omp.",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "Debug-omp"
+        },
+        {
+          "type": "build",
+          "name": "Debug-omp-build"
+        },
+        {
+          "type": "build",
+          "name": "Debug-omp-install"
+        }
+      ]
+    },
+    {
+      "name": "install-dbg-std",
+      "displayName": "install Debug-std",
+      "description": "Configures, builds, and installs Debug-std.",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "Debug-std"
+        },
+        {
+          "type": "build",
+          "name": "Debug-std-build"
+        },
+        {
+          "type": "build",
+          "name": "Debug-std-install"
+        }
+      ]
+    }
+  ]
+}

@@ -35,10 +35,35 @@ if (USE_OPENMP)
   add_compile_definitions (USE_OPENMP)
 endif()
 
+
+
+
+include(FetchContent)
+
+# Get SDL3
+FetchContent_Declare(
+  SDL3
+  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+  GIT_TAG release-3.2.20
+)
+FetchContent_MakeAvailable(SDL3)
+
+# Get Dear Imgui
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG v1.92.2
+)
+FetchContent_MakeAvailable(imgui)
+
 # Location of user-provided CMake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Find external libraries
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+find_package(glfw3 REQUIRED)
+find_package(glm REQUIRED)
 find_package(FFTWF REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)

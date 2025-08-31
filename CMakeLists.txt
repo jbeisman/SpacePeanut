@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Add user options
-## These are set in CMakePresets.json
+## These are provided here as defaults, but should be set in CMakePresets.json
 option(USE_OPENMP "Enable OpenMP parallelization" OFF)
 option(USE_STD_PARALLEL "Enable C++ std::execution parallelization" OFF)
 
@@ -21,11 +21,6 @@ else()
     message(FATAL_ERROR "ERROR: Incorrect configuration -- Please set only one of USE_STD_PARALLEL or USE_OPENMP to true")
 endif()
 
-# Set RPATH
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
 # Set compiler definitions
 if (USE_STD_PARALLEL)
   add_compile_definitions (USE_STD_PARALLEL)
@@ -35,26 +30,15 @@ if (USE_OPENMP)
   add_compile_definitions (USE_OPENMP)
 endif()
 
-
-
-
-include(FetchContent)
-
-# Get SDL3
-FetchContent_Declare(
-  SDL3
-  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-  GIT_TAG release-3.2.20
-)
-FetchContent_MakeAvailable(SDL3)
-
-# Get Dear Imgui
-FetchContent_Declare(
-  imgui
-  GIT_REPOSITORY https://github.com/ocornut/imgui.git
-  GIT_TAG v1.92.2
-)
-FetchContent_MakeAvailable(imgui)
+# Set RPATH
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
 
 # Location of user-provided CMake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -78,4 +62,5 @@ if (USE_OPENMP)
 endif()
 
 # Build the project
+add_subdirectory(third_party)
 add_subdirectory(src)

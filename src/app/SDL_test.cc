@@ -22,18 +22,33 @@
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
+#include "simulator.hh"
+
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
 
 
-struct AppState {
+class AppState {
+public:
+    AppState();
+    ~AppState() = default;
+    std::unique_ptr<ParticleMeshSimulator> sim_ptr;
     SDL_Window *window_ptr;
     SDL_GLContext context_ptr;
     bool app_finished{false};
     bool show_demo_window{true};
     bool show_another_window{false};
     ImVec4 clear_color{ImVec4(0.45f, 0.55f, 0.60f, 1.00f)};
+
+    bool sim_initialized{false};
+    bool pause_state{true};
 };
+
+AppState::AppState()
+{
+    sim_ptr = std::make_unique<ParticleMeshSimulator>();
+}
+
 
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -117,7 +132,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
@@ -152,6 +167,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
     //IM_ASSERT(font != nullptr);
 
+    //app->sim_ptr->initialize_simulation();
+    app->sim_ptr->sim_change_pause_state(true);
+    app->sim_ptr->sim_set_write_output(false);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -178,6 +196,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && 
         event->window.windowID == SDL_GetWindowID(app->window_ptr)) {
         app->app_finished = true;  /* end the program, reporting success to the OS. */
+        return SDL_APP_SUCCESS;
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -190,7 +209,6 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 {
     auto *app = static_cast<AppState*>(appstate);
 
-
     if (SDL_GetWindowFlags(app->window_ptr) & SDL_WINDOW_MINIMIZED)
     {
         SDL_Delay(10);
@@ -201,43 +219,56 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
 
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    if (app->show_demo_window)
-        ImGui::ShowDemoWindow(&(app->show_demo_window));
+    //if (app->show_demo_window)
+    //    ImGui::ShowDemoWindow(&(app->show_demo_window));
 
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+
+    // Get input from user
+    static int NGRID = 2;
+    static int NBODS = 2097152;
+    static float GMAX = 64.0;
+    static float RSHIFT = 50.0;
+    static int NSTEPS = 1000;
     {
-        static float f = 0.0f;
-        static int counter = 0;
+        ImGui::Begin("Options");
 
-        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::SeparatorText("Inputs");
 
-        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-        ImGui::Checkbox("Demo Window", &(app->show_demo_window));      // Edit bools storing our window open/close state
-        ImGui::Checkbox("Another Window", &(app->show_another_window));
+            ImGui::Text("Number of grid cells in 1D -- N in NxNxN");
+            ImGui::RadioButton("32", &NGRID, 0); ImGui::SameLine();
+            ImGui::RadioButton("64", &NGRID, 1); ImGui::SameLine();
+            ImGui::RadioButton("128", &NGRID, 2); ImGui::SameLine();
+            ImGui::RadioButton("256", &NGRID, 3); ImGui::SameLine();
+            ImGui::RadioButton("512", &NGRID, 4);
 
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float*)&(app->clear_color)); // Edit 3 floats representing a color
+            ImGui::InputInt("Number of particles", &NBODS);
 
-        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
+            ImGui::InputFloat("Grid length in 1D", &GMAX);
 
+            ImGui::InputFloat("Redshift value", &RSHIFT);
 
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::InputInt("Number of timesteps", &NSTEPS);
+
         ImGui::End();
-    }
 
-    // 3. Show another simple window.
-    if (app->show_another_window)
-    {
-        ImGui::Begin("Another Window", &(app->show_another_window));   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Text("Hello from another window!");
-        if (ImGui::Button("Close Me"))
-            app->show_another_window = false;
+
+        ImGui::Begin("Controls");
+
+            if (ImGui::Button("START")) {
+                app->pause_state = false;
+                app->sim_ptr->sim_change_pause_state(app->pause_state);
+            }
+
+            if (ImGui::Button("PAUSE")) {
+                app->pause_state = true;
+                app->sim_ptr->sim_change_pause_state(app->pause_state);
+            }
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
         ImGui::End();
     }
 
@@ -246,6 +277,15 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(app->clear_color.x * app->clear_color.w, app->clear_color.y * app->clear_color.w, app->clear_color.z * app->clear_color.w, app->clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if (!app->sim_ptr->sim_is_paused() && !app->sim_initialized) {
+        app->sim_ptr->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
+        app->sim_initialized = true;
+    }
+
+    if (!app->sim_ptr->sim_is_paused()) { app->sim_ptr->advance_single_timestep(); }
+
+
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(app->window_ptr);
 
@@ -259,67 +299,15 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
 
     if (appstate != NULL) {
         auto *app = static_cast<AppState*>(appstate);
-        SDL_DestroyWindow(app->window_ptr);
         SDL_GL_DestroyContext(app->context_ptr);
+        SDL_DestroyWindow(app->window_ptr);
         delete app;
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*  !!!!!
-ImGui::Render();
-
-// Clear the screen
-ImGuiIO& io = ImGui::GetIO();
-glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-glClearColor(0, 0, 0, 255);
-glClear(GL_COLOR_BUFFER_BIT);
-
-// Render your own game scene here
-// Note: You don't need this if you are using ImGui draw functions
-
-// Render ImGui windows
-ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-SDL_GL_SwapWindow(window);
-*/

@@ -22,11 +22,17 @@
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "simulator.hh"
+#include "camera.hh"
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
 
+struct MousePosition {
+    float x, y;
+};
 
 class AppState {
 public:
@@ -38,15 +44,18 @@ public:
     bool app_finished{false};
     bool show_demo_window{true};
     bool show_another_window{false};
-    ImVec4 clear_color{ImVec4(0.45f, 0.55f, 0.60f, 1.00f)};
+    ImVec4 clear_color{ImVec4(0.0f, 0.0f, 0.0f, 1.00f)};
 
     bool sim_initialized{false};
     bool pause_state{true};
+    bool mouse_dragging{false};
+    std::unique_ptr<Camera> cam;
 };
 
 AppState::AppState()
 {
     sim_ptr = std::make_unique<ParticleMeshSimulator>();
+    cam = std::make_unique<Camera>(glm::vec3(0.0f,0.0f,-5.0f), glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,1.0f,0.0f));
 }
 
 
@@ -182,27 +191,51 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
-SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
 {
     auto *app = static_cast<AppState*>(appstate);
 
-    ImGui_ImplSDL3_ProcessEvent(event);
+    ImGui_ImplSDL3_ProcessEvent(ev);
 
-    if (event->type == SDL_EVENT_QUIT) {
+    // Quit if escape key pressed, window is closed, or termination signal is received
+    if ((ev->type == SDL_EVENT_KEY_DOWN && ev->key.key == SDLK_ESCAPE) ||
+        (ev->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && ev->window.windowID == SDL_GetWindowID(app->window_ptr)) ||
+        (ev->type == SDL_EVENT_QUIT)) {
+
+        // Sim seg faults if forced to quit before initialization
+        if (!app->sim_initialized) { app->sim_ptr->initialize_simulation(1.0f, 1, 1, 1, 1.0f); }
+
+        // Stop and exit
         app->app_finished = true;
-        return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
-    }
-
-    if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && 
-        event->window.windowID == SDL_GetWindowID(app->window_ptr)) {
-        app->app_finished = true;  /* end the program, reporting success to the OS. */
         return SDL_APP_SUCCESS;
     }
 
+    // Handle mouse inputs
+    switch(ev->type) {
+
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if (ev->button.button == SDL_BUTTON_LEFT) {
+                app->mouse_dragging = true;
+                app->cam->start_drag(glm::vec2(ev->button.x, ev->button.y));
+            }
+            break;
+
+        case SDL_EVENT_MOUSE_MOTION:
+            if (app->mouse_dragging) {
+                ImGuiIO& io = ImGui::GetIO();
+                app->cam->update_drag(glm::vec2(ev->motion.x, ev->motion.y), glm::vec2(io.DisplaySize.x, io.DisplaySize.y));
+            }
+            break;
+
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            if (ev->button.button == SDL_BUTTON_LEFT) {
+                app->mouse_dragging = false;
+                app->cam->end_drag();
+            }
+            break;
+    }
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
-
-
 
 
 SDL_AppResult SDL_AppIterate(void *appstate)
@@ -220,11 +253,6 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     ImGui::NewFrame();
 
     ImGuiIO& io = ImGui::GetIO();
-
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    //if (app->show_demo_window)
-    //    ImGui::ShowDemoWindow(&(app->show_demo_window));
-
 
     // Get input from user
     static int NGRID = 2;
@@ -276,7 +304,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     ImGui::Render();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(app->clear_color.x * app->clear_color.w, app->clear_color.y * app->clear_color.w, app->clear_color.z * app->clear_color.w, app->clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (!app->sim_ptr->sim_is_paused() && !app->sim_initialized) {
         app->sim_ptr->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
@@ -285,6 +313,63 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     if (!app->sim_ptr->sim_is_paused()) { app->sim_ptr->advance_single_timestep(); }
 
+
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+glm::mat4 projection = glm::perspective(glm::radians(60.0f), io.DisplaySize.x / io.DisplaySize.y, 0.1f, 200.0f);
+glLoadMatrixf(glm::value_ptr(projection));
+
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+glm::mat4 view_matrix = app->cam->get_view_matrix();
+glMultMatrixf(glm::value_ptr(view_matrix));
+
+
+glBegin(GL_QUADS);
+
+    // Front
+    glColor3f(1, 0, 0);
+    glVertex3f(-1, -1,  1);
+    glVertex3f( 1, -1,  1);
+    glVertex3f( 1,  1,  1);
+    glVertex3f(-1,  1,  1);
+
+    // Back
+    glColor3f(0, 1, 0);
+    glVertex3f(-1, -1, -1);
+    glVertex3f(-1,  1, -1);
+    glVertex3f( 1,  1, -1);
+    glVertex3f( 1, -1, -1);
+
+    // Top
+    glColor3f(0, 0, 1);
+    glVertex3f(-1, 1, -1);
+    glVertex3f(-1, 1,  1);
+    glVertex3f( 1, 1,  1);
+    glVertex3f( 1, 1, -1);
+
+    // Bottom
+    glColor3f(1, 1, 0);
+    glVertex3f(-1, -1, -1);
+    glVertex3f( 1, -1, -1);
+    glVertex3f( 1, -1,  1);
+    glVertex3f(-1, -1,  1);
+
+    // Right
+    glColor3f(1, 0, 1);
+    glVertex3f(1, -1, -1);
+    glVertex3f(1,  1, -1);
+    glVertex3f(1,  1,  1);
+    glVertex3f(1, -1,  1);
+
+    // Left
+    glColor3f(0, 1, 1);
+    glVertex3f(-1, -1, -1);
+    glVertex3f(-1, -1,  1);
+    glVertex3f(-1,  1,  1);
+    glVertex3f(-1,  1, -1);
+
+glEnd();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(app->window_ptr);

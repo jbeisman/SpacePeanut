@@ -1,9 +1,13 @@
 
 // These must be included in exactly one source file
 #define SDL_MAIN_USE_CALLBACKS
+#define GL_GLEXT_PROTOTYPES 1
+#define GL3_PROTOTYPES 1
 
+#include <GL/glew.h>
 
 #include "imgui.h"
+#include "imgui_impl_glfw.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
@@ -15,20 +19,23 @@
 #include <SDL3/SDL_opengl.h>
 #endif
 
-
+#include <iostream>
+#include <fstream>
 #include <memory>
 
 #ifdef __EMSCRIPTEN__
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
+#include "renderer.hh"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "simulator.hh"
 #include "camera.hh"
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
 
 struct MousePosition {
     float x, y;
@@ -38,7 +45,6 @@ class AppState {
 public:
     AppState();
     ~AppState() = default;
-    std::unique_ptr<ParticleMeshSimulator> sim_ptr;
     SDL_Window *window_ptr;
     SDL_GLContext context_ptr;
     bool app_finished{false};
@@ -47,31 +53,28 @@ public:
     ImVec4 clear_color{ImVec4(0.0f, 0.0f, 0.0f, 1.00f)};
 
     bool sim_initialized{false};
+    bool execute_sim_init{false};
     bool pause_state{true};
     bool mouse_dragging{false};
-    std::unique_ptr<Camera> cam;
+    std::unique_ptr<Renderer> renderer;
 };
 
 AppState::AppState()
 {
-    sim_ptr = std::make_unique<ParticleMeshSimulator>();
-    cam = std::make_unique<Camera>(glm::vec3(0.0f,0.0f,-5.0f), glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,1.0f,0.0f));
+    renderer = std::make_unique<Renderer>();
+    renderer->simulator->sim_change_pause_state(true);
+    renderer->simulator->sim_set_write_output(false);
 }
-
-
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {   
     *appstate = new AppState;
     auto *app = static_cast<AppState*>(*appstate);
 
-    SDL_SetAppMetadata("Example Renderer Points", "1.0", "com.example.renderer-points");
-
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
-
 
     // Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -159,26 +162,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     ImGui_ImplSDL3_InitForOpenGL(app->window_ptr, app->context_ptr);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details. If you like the default font but want it to scale better, consider using the 'ProggyVector' from the same author!
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    //style.FontSizeBase = 20.0f;
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf");
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
-    //IM_ASSERT(font != nullptr);
-
-    //app->sim_ptr->initialize_simulation();
-    app->sim_ptr->sim_change_pause_state(true);
-    app->sim_ptr->sim_set_write_output(false);
+    // Initialize OpenGL extensions
+    glewInit();
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -203,7 +188,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
         (ev->type == SDL_EVENT_QUIT)) {
 
         // Sim seg faults if forced to quit before initialization
-        if (!app->sim_initialized) { app->sim_ptr->initialize_simulation(1.0f, 1, 1, 1, 1.0f); }
+        if (!app->sim_initialized) { app->renderer->simulator->initialize_simulation(1.0f, 1, 1, 1, 1.0f); }
 
         // Stop and exit
         app->app_finished = true;
@@ -216,21 +201,29 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             if (ev->button.button == SDL_BUTTON_LEFT) {
                 app->mouse_dragging = true;
-                app->cam->start_drag(glm::vec2(ev->button.x, ev->button.y));
+
+                if (app->renderer->camera != nullptr)
+                    app->renderer->camera->start_drag(glm::vec2(ev->button.x, ev->button.y));
             }
             break;
 
         case SDL_EVENT_MOUSE_MOTION:
             if (app->mouse_dragging) {
-                ImGuiIO& io = ImGui::GetIO();
-                app->cam->update_drag(glm::vec2(ev->motion.x, ev->motion.y), glm::vec2(io.DisplaySize.x, io.DisplaySize.y));
+
+                if (app->renderer->camera != nullptr) {
+                    ImGuiIO& io = ImGui::GetIO();
+                    app->renderer->camera->update_drag(glm::vec2(ev->motion.x, ev->motion.y),
+                        glm::vec2(io.DisplaySize.x, io.DisplaySize.y));
+                }
             }
             break;
 
         case SDL_EVENT_MOUSE_BUTTON_UP:
             if (ev->button.button == SDL_BUTTON_LEFT) {
                 app->mouse_dragging = false;
-                app->cam->end_drag();
+
+                if (app->renderer->camera != nullptr)
+                    app->renderer->camera->end_drag();
             }
             break;
     }
@@ -254,9 +247,13 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     ImGuiIO& io = ImGui::GetIO();
 
+    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+    if (app->show_demo_window)
+        ImGui::ShowDemoWindow(&(app->show_demo_window));
+
     // Get input from user
-    static int NGRID = 2;
-    static int NBODS = 2097152;
+    static int NGRID = 128;
+    static int NBODS = 32768;
     static float GMAX = 64.0;
     static float RSHIFT = 50.0;
     static int NSTEPS = 1000;
@@ -264,35 +261,37 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         ImGui::Begin("Options");
 
             ImGui::SeparatorText("Inputs");
-
             ImGui::Text("Number of grid cells in 1D -- N in NxNxN");
             ImGui::RadioButton("32", &NGRID, 0); ImGui::SameLine();
             ImGui::RadioButton("64", &NGRID, 1); ImGui::SameLine();
             ImGui::RadioButton("128", &NGRID, 2); ImGui::SameLine();
             ImGui::RadioButton("256", &NGRID, 3); ImGui::SameLine();
             ImGui::RadioButton("512", &NGRID, 4);
-
-            ImGui::InputInt("Number of particles", &NBODS);
-
-            ImGui::InputFloat("Grid length in 1D", &GMAX);
-
             ImGui::InputFloat("Redshift value", &RSHIFT);
-
+            ImGui::InputFloat("Grid length in 1D", &GMAX);
+            ImGui::InputInt("Number of particles", &NBODS);
             ImGui::InputInt("Number of timesteps", &NSTEPS);
 
-        ImGui::End();
-
-
-        ImGui::Begin("Controls");
+            ImGui::SeparatorText("Controls");
+            if (ImGui::Button("INITIALIZE")) {
+                app->execute_sim_init = true;
+            } ImGui::SameLine();
 
             if (ImGui::Button("START")) {
                 app->pause_state = false;
-                app->sim_ptr->sim_change_pause_state(app->pause_state);
-            }
+                app->renderer->simulator->sim_change_pause_state(app->pause_state);
+            } ImGui::SameLine();
 
             if (ImGui::Button("PAUSE")) {
                 app->pause_state = true;
-                app->sim_ptr->sim_change_pause_state(app->pause_state);
+                app->renderer->simulator->sim_change_pause_state(app->pause_state);
+            } ImGui::SameLine();
+
+            if (ImGui::Button("QUIT")) {
+                // Stop and exit
+                SDL_Event sdl_quit;
+                sdl_quit.type = SDL_EVENT_QUIT;
+                SDL_PushEvent(&sdl_quit);
             }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
@@ -306,70 +305,23 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     glClearColor(app->clear_color.x * app->clear_color.w, app->clear_color.y * app->clear_color.w, app->clear_color.z * app->clear_color.w, app->clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (!app->sim_ptr->sim_is_paused() && !app->sim_initialized) {
-        app->sim_ptr->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
+    // Enable depth test
+    glEnable(GL_DEPTH_TEST);
+    // Accept fragment if it is closer to the camera than the former one
+    glDepthFunc(GL_LESS);
+
+    if (app->execute_sim_init && !app->sim_initialized) {
+        app->renderer->init(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
         app->sim_initialized = true;
+        std::cout << "initialize simulation called\n";
     }
 
-    if (!app->sim_ptr->sim_is_paused()) { app->sim_ptr->advance_single_timestep(); }
-
-
-glMatrixMode(GL_PROJECTION);
-glLoadIdentity();
-glm::mat4 projection = glm::perspective(glm::radians(60.0f), io.DisplaySize.x / io.DisplaySize.y, 0.1f, 200.0f);
-glLoadMatrixf(glm::value_ptr(projection));
-
-glMatrixMode(GL_MODELVIEW);
-glLoadIdentity();
-glm::mat4 view_matrix = app->cam->get_view_matrix();
-glMultMatrixf(glm::value_ptr(view_matrix));
-
-
-glBegin(GL_QUADS);
-
-    // Front
-    glColor3f(1, 0, 0);
-    glVertex3f(-1, -1,  1);
-    glVertex3f( 1, -1,  1);
-    glVertex3f( 1,  1,  1);
-    glVertex3f(-1,  1,  1);
-
-    // Back
-    glColor3f(0, 1, 0);
-    glVertex3f(-1, -1, -1);
-    glVertex3f(-1,  1, -1);
-    glVertex3f( 1,  1, -1);
-    glVertex3f( 1, -1, -1);
-
-    // Top
-    glColor3f(0, 0, 1);
-    glVertex3f(-1, 1, -1);
-    glVertex3f(-1, 1,  1);
-    glVertex3f( 1, 1,  1);
-    glVertex3f( 1, 1, -1);
-
-    // Bottom
-    glColor3f(1, 1, 0);
-    glVertex3f(-1, -1, -1);
-    glVertex3f( 1, -1, -1);
-    glVertex3f( 1, -1,  1);
-    glVertex3f(-1, -1,  1);
-
-    // Right
-    glColor3f(1, 0, 1);
-    glVertex3f(1, -1, -1);
-    glVertex3f(1,  1, -1);
-    glVertex3f(1,  1,  1);
-    glVertex3f(1, -1,  1);
-
-    // Left
-    glColor3f(0, 1, 1);
-    glVertex3f(-1, -1, -1);
-    glVertex3f(-1, -1,  1);
-    glVertex3f(-1,  1,  1);
-    glVertex3f(-1,  1, -1);
-
-glEnd();
+    if (app->sim_initialized) { 
+        bool run_step = (app->renderer->simulator->sim_is_paused()) ? false : true;
+        glm::mat4 projection = glm::perspective(glm::radians(60.0f), io.DisplaySize.x / io.DisplaySize.y, 0.1f, 200.0f);
+        app->renderer->run_and_display(run_step, projection);
+        
+    }
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(app->window_ptr);

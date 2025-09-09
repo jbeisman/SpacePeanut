@@ -12,14 +12,17 @@ public:
     void end_drag();
     void update_drag(const glm::vec2& mouse_pos, const glm::vec2& view_size);
     glm::mat4x4 get_view_matrix() const;
+    glm::mat4x4 get_projection_matrix() const;
+    glm::mat4x4 get_model_matrix() const;
+    void set_camera_view(glm::vec3 eye);
+    void update_view_matrix();
+
     glm::vec3 get_cam_pos() const;
     glm::vec3 get_up_vec() const;
     glm::vec3 get_LookAt() const;
     glm::vec3 get_view_direction() const;
     glm::vec3 get_right_vec() const;
 
-    void set_camera_view(glm::vec3 eye);
-    void update_view_matrix();
 private:
     glm::mat4x4 view_matrix; // view matrix output
     glm::vec3 cam_pos; // camera position in 3D

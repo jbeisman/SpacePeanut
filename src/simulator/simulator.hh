@@ -69,13 +69,15 @@ public:
 	void sim_change_dt(float new_dt);
 	void sim_set_delay(int new_delay);
 	void sim_set_write_output(bool write_output);
+	std::array<float,3> *get_positions();
+	std::vector<int> get_indices();
 
 private:
 	std::unique_ptr<CosmicTime> space_time;
 	std::unique_ptr<ParticleMeshSystem> pm_system;
 	int filenum{0};
 	int delay_ms{0};
-	bool PAUSED{false};
+	bool PAUSED{true};
 	bool WRITE_OUTPUT{true};
 };
 

@@ -57,13 +57,6 @@ void Camera::update_drag(const glm::vec2& mouse_pos, const glm::vec2& view_size)
     prev_mouse_pos.y = mouse_pos.y;
 }
 
-glm::mat4x4 Camera::get_view_matrix() const { return view_matrix; }
-glm::vec3 Camera::get_cam_pos() const { return cam_pos; }
-glm::vec3 Camera::get_up_vec() const { return up_vector; }
-glm::vec3 Camera::get_LookAt() const { return look_at; }
-glm::vec3 Camera::get_view_direction() const { return -glm::transpose(view_matrix)[2]; }
-glm::vec3 Camera::get_right_vec() const { return glm::transpose(view_matrix)[0]; }
-
 void Camera::set_camera_view(glm::vec3 eye)
 {
     cam_pos = std::move(eye);
@@ -75,3 +68,11 @@ void Camera::update_view_matrix()
     view_matrix = glm::lookAt(cam_pos, look_at, up_vector);
 }
 
+glm::mat4x4 Camera::get_view_matrix() const { return view_matrix; }
+glm::mat4x4 Camera::get_projection_matrix() const { return glm::perspective(glm::radians(60.0f), 1280.0f / 800, 0.1f, 200.0f); }
+glm::mat4x4 Camera::get_model_matrix() const { return glm::mat4x4(1.0f); }
+glm::vec3 Camera::get_cam_pos() const { return cam_pos; }
+glm::vec3 Camera::get_up_vec() const { return up_vector; }
+glm::vec3 Camera::get_LookAt() const { return look_at; }
+glm::vec3 Camera::get_view_direction() const { return -glm::transpose(view_matrix)[2]; }
+glm::vec3 Camera::get_right_vec() const { return glm::transpose(view_matrix)[0]; }

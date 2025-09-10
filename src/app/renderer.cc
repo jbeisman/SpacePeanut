@@ -117,22 +117,29 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) 
 }
 
 
-void Renderer::run_and_display(bool run, glm::mat4& projection) {
+void Renderer::run_and_display(bool run, float aspect_ratio) {
 
     if (run) {
         this->simulator->advance_single_timestep();
     }
 
+    // Enable depth test
     glEnable(GL_DEPTH_TEST);
+    // Accept fragment if it is closer to the camera than the former one
+    glDepthFunc(GL_LESS);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(this->shaderProgram);
     
     // Update UBO data
     glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(this->camera->get_model_matrix()));
-    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(this->camera->get_view_matrix()));
-    glBufferSubData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
+        glm::value_ptr(this->camera->get_model_matrix()));
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
+        glm::value_ptr(this->camera->get_view_matrix()));
+    glBufferSubData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), sizeof(glm::mat4),
+        glm::value_ptr(this->camera->get_projection_matrix(aspect_ratio)));
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);

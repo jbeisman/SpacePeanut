@@ -26,9 +26,6 @@
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include "renderer.hh"
 #include "simulator.hh"
 #include "camera.hh"
@@ -299,28 +296,24 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         ImGui::End();
     }
 
-    // Rendering
-    ImGui::Render();
-    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    glClearColor(app->clear_color.x * app->clear_color.w, app->clear_color.y * app->clear_color.w, app->clear_color.z * app->clear_color.w, app->clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Enable depth test
-    glEnable(GL_DEPTH_TEST);
-    // Accept fragment if it is closer to the camera than the former one
-    glDepthFunc(GL_LESS);
-
+    // Initialize renderer, simulation, camera
     if (app->execute_sim_init && !app->sim_initialized) {
         app->renderer->init(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
         app->sim_initialized = true;
-        std::cout << "initialize simulation called\n";
     }
 
+
+    // Rendering
+    ImGui::Render();
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+
+
+    // Render particles if they exist and run simulation if ready
     if (app->sim_initialized) { 
         bool run_step = (app->renderer->simulator->sim_is_paused()) ? false : true;
-        glm::mat4 projection = glm::perspective(glm::radians(60.0f), io.DisplaySize.x / io.DisplaySize.y, 0.1f, 200.0f);
-        app->renderer->run_and_display(run_step, projection);
-        
+        float aspect_ratio = io.DisplaySize.x / io.DisplaySize.y;
+        app->renderer->run_and_display(run_step, aspect_ratio);
     }
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

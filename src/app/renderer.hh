@@ -21,6 +21,6 @@ public:
     GLuint shaderProgram, VAO, VBO, UBO;
     Renderer();
     void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
-    void run_and_display(bool run, glm::mat4& projection);
+    void run_and_display(bool run, float aspect_ratio);
 };
 

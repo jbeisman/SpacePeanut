@@ -239,7 +239,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     // Get input from user
     static int NGRID;
-    static int NBODS = 32768;
+    static int NBODS = 2097152;
     static float GMAX = 64.0;
     static float RSHIFT = 50.0;
     static int NSTEPS = 1000;
@@ -274,9 +274,10 @@ SDL_AppResult SDL_AppIterate(void *appstate)
                 app->execute_sim_init = true;
             } ImGui::SameLine();
 
-            if (ImGui::Button("START")) {
+            if (ImGui::Button("RUN")) {
                 app->pause_state = false;
                 app->renderer->simulator->sim_change_pause_state(app->pause_state);
+                app->execute_sim_init = true;
             } ImGui::SameLine();
 
             if (ImGui::Button("PAUSE")) {

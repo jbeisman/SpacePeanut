@@ -47,11 +47,8 @@ public:
     ~AppState() = default;
     SDL_Window *window_ptr;
     SDL_GLContext context_ptr;
-    bool app_finished{false};
-    bool show_demo_window{true};
-    bool show_another_window{false};
     ImVec4 clear_color{ImVec4(0.0f, 0.0f, 0.0f, 1.00f)};
-
+    bool app_finished{false};
     bool sim_initialized{false};
     bool execute_sim_init{false};
     bool pause_state{true};
@@ -247,12 +244,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     ImGuiIO& io = ImGui::GetIO();
 
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    if (app->show_demo_window)
-        ImGui::ShowDemoWindow(&(app->show_demo_window));
-
     // Get input from user
-    static int NGRID = 128;
+    static int NGRID;
     static int NBODS = 32768;
     static float GMAX = 64.0;
     static float RSHIFT = 50.0;
@@ -261,16 +254,27 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         ImGui::Begin("Options");
 
             ImGui::SeparatorText("Inputs");
-            ImGui::Text("Number of grid cells in 1D -- N in NxNxN");
-            ImGui::RadioButton("32", &NGRID, 0); ImGui::SameLine();
-            ImGui::RadioButton("64", &NGRID, 1); ImGui::SameLine();
-            ImGui::RadioButton("128", &NGRID, 2); ImGui::SameLine();
-            ImGui::RadioButton("256", &NGRID, 3); ImGui::SameLine();
-            ImGui::RadioButton("512", &NGRID, 4);
-            ImGui::InputFloat("Redshift value", &RSHIFT);
-            ImGui::InputFloat("Grid length in 1D", &GMAX);
+            {
+                const char* items[] = { "32", "64", "128", "256", "512" };
+                static int NGRID_selector = 2;
+                ImGui::Combo("Number of grid cells in 1D -- N in NxNxN", &NGRID_selector, items, IM_ARRAYSIZE(items));
+                if (NGRID_selector == 0)
+                    NGRID = 32;
+                else if (NGRID_selector == 1)
+                    NGRID = 64;
+                else if (NGRID_selector == 2)
+                    NGRID = 128;
+                else if (NGRID_selector == 3)
+                    NGRID = 256;
+                else if (NGRID_selector == 4)
+                    NGRID = 512;
+            }
+
             ImGui::InputInt("Number of particles", &NBODS);
+            ImGui::InputFloat("Grid length in 1D", &GMAX);
+            ImGui::InputFloat("Redshift value", &RSHIFT);
             ImGui::InputInt("Number of timesteps", &NSTEPS);
+
 
             ImGui::SeparatorText("Controls");
             if (ImGui::Button("INITIALIZE")) {

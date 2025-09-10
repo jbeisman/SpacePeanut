@@ -10,14 +10,14 @@
 
 class ParticleMeshSystem {
 public:
+	ParticleMeshSystem() = default;
 	ParticleMeshSystem(const int nbods, const int ngrid, const float gridlength);
-	ParticleMeshSystem() = delete;
 	~ParticleMeshSystem();
+	void setup_system(const int nbods, const int ngrid, const float gridlength);
 	void initialize_system(const float vmin, const float vmax, const float time_scale);
 	void integrate_timestep(const float dt, float time);
 
 	TimeLogger timer;													// timer to log performance data
-	GridConst grid;														// grid metadata
 	std::vector<std::array<float, 3>> pPos;								// particle positions
 	std::vector<std::array<float, 3>> pVel;								// particle velocities
 	std::vector<std::array<float, 3>> pAcc;								// particle accelerations
@@ -31,4 +31,5 @@ private:
 	std::vector<std::array<short int,3>> fft_i;							// triple short int index for fft  (NGRID * NGRID * NGRID_HALF)
 	std::vector<std::array<short int,3>> grid_i;						// triple short int index for grid (NGRID * NGRID * NGRID)
 	std::unique_ptr<fft_util::Plans> fft_plans;							// struct containing fftw3 plans
+	std::unique_ptr<GridConst> grid;									// grid metadata
 };

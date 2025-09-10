@@ -71,9 +71,13 @@ Renderer::Renderer() {
 
 void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) {
     this->NUMBODS = NBODS;
-    this->camera = std::make_unique<Camera>(glm::vec3(0.0f,0.0f,-1.5*GMAX), glm::vec3(GMAX/2,GMAX/2,GMAX/2), glm::vec3(0.0f,1.0f,0.0f));
+    this->camera = std::make_unique<Camera>(glm::vec3(GMAX/2,GMAX/2,-1*GMAX),
+                                            glm::vec3(GMAX/2,GMAX/2,GMAX/2),
+                                            glm::vec3(0.0f,1.0f,0.0f));
+    
     this->simulator->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
     auto *vertices = this->simulator->get_positions();
+    
     // Generate buffers
     glGenVertexArrays(1, &this->VAO);
     glGenBuffers(1, &this->VBO);

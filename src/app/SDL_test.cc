@@ -192,6 +192,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
         return SDL_APP_SUCCESS;
     }
 
+    ImGuiIO& io = ImGui::GetIO();
+
     // Handle mouse inputs
     switch(ev->type) {
 
@@ -199,7 +201,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
             if (ev->button.button == SDL_BUTTON_LEFT) {
                 app->mouse_dragging = true;
 
-                if (app->renderer->camera != nullptr)
+                if (app->renderer->camera != nullptr && !io.WantCaptureMouse)
                     app->renderer->camera->start_drag(glm::vec2(ev->button.x, ev->button.y));
             }
             break;
@@ -207,8 +209,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
         case SDL_EVENT_MOUSE_MOTION:
             if (app->mouse_dragging) {
 
-                if (app->renderer->camera != nullptr) {
-                    ImGuiIO& io = ImGui::GetIO();
+                if (app->renderer->camera != nullptr && !io.WantCaptureMouse) {
                     app->renderer->camera->update_drag(glm::vec2(ev->motion.x, ev->motion.y),
                         glm::vec2(io.DisplaySize.x, io.DisplaySize.y));
                 }
@@ -219,7 +220,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev)
             if (ev->button.button == SDL_BUTTON_LEFT) {
                 app->mouse_dragging = false;
 
-                if (app->renderer->camera != nullptr)
+                if (app->renderer->camera != nullptr && !io.WantCaptureMouse)
                     app->renderer->camera->end_drag();
             }
             break;
@@ -257,7 +258,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             {
                 const char* items[] = { "32", "64", "128", "256", "512" };
                 static int NGRID_selector = 2;
-                ImGui::Combo("Number of grid cells in 1D -- N in NxNxN", &NGRID_selector, items, IM_ARRAYSIZE(items));
+                ImGui::Combo("Grid resolution", &NGRID_selector, items, IM_ARRAYSIZE(items));
                 if (NGRID_selector == 0)
                     NGRID = 32;
                 else if (NGRID_selector == 1)
@@ -271,7 +272,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             }
 
             ImGui::InputInt("Number of particles", &NBODS);
-            ImGui::InputFloat("Grid length in 1D", &GMAX);
+            ImGui::InputFloat("Grid length", &GMAX);
             ImGui::InputFloat("Redshift value", &RSHIFT);
             ImGui::InputInt("Number of timesteps", &NSTEPS);
 

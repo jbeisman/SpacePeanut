@@ -7,7 +7,6 @@
 #include <GL/glew.h>
 
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
@@ -27,19 +26,15 @@
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-#include "renderer.hh"
-
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "renderer.hh"
 #include "simulator.hh"
 #include "camera.hh"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-
-struct MousePosition {
-    float x, y;
-};
 
 class AppState {
 public:

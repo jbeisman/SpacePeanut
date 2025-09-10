@@ -65,8 +65,6 @@ Renderer::Renderer() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-    glfwSwapInterval(1);
 }
 
 void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) {

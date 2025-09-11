@@ -9,8 +9,11 @@ layout(std140) uniform UBO {
     mat4 projection;
 };
 
+out vec3 FragPos;
+
 void main() {
 
-    gl_PointSize = 10.0;
+    gl_PointSize = 2.0;
     gl_Position = projection * view * model * vec4(aPos, 1.0);
+    FragPos = aPos;
 }

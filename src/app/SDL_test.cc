@@ -308,6 +308,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     // Rendering
     ImGui::Render();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
     // Render particles if they exist and run simulation if ready

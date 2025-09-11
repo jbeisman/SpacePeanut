@@ -1,5 +1,6 @@
 
 #include "renderer.hh"
+#include "parallel_utils.hh"
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,6 +10,12 @@
 
 #include <filesystem>
 #include <stdexcept>
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <execution>
+#include <utility>
 
 GLuint Renderer::compileShader(GLenum type, const char* path) {
     std::ifstream file(path);
@@ -62,20 +69,29 @@ Renderer::Renderer() {
     this->simulator = std::make_unique<ParticleMeshSimulator>();
     this->camera = nullptr;
 
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+
+    // Color Map (Simple "Viridis-like" gradient)
+    this->colorMap.push_back(glm::vec3(0.267f, 0.005f, 0.329f)); // Dark Purple
+    this->colorMap.push_back(glm::vec3(0.127f, 0.561f, 0.553f)); // Teal
+    this->colorMap.push_back(glm::vec3(0.993f, 0.906f, 0.145f)); // Yellow
 }
 
 void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) {
     this->NUMBODS = NBODS;
+    this->NUMGRID = NGRID;
+    this->GRIDLEN = GMAX;
     this->camera = std::make_unique<Camera>(glm::vec3(GMAX/2,GMAX/2,-1*GMAX),
                                             glm::vec3(GMAX/2,GMAX/2,GMAX/2),
                                             glm::vec3(0.0f,1.0f,0.0f));
     
     this->simulator->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
     auto *vertices = this->simulator->get_positions();
-    
+
     // Generate buffers
     glGenVertexArrays(1, &this->VAO);
     glGenBuffers(1, &this->VBO);
@@ -89,6 +105,29 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) 
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * NBODS * 3, vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void *)0);
+
+    // Generate texture for mass density
+    glGenTextures(1, &this->texture3D);
+    glBindTexture(GL_TEXTURE_3D, this->texture3D);
+    
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    // Upload data to the texture.
+    auto *density = this->simulator->get_mass_density();
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, this->NUMGRID, this->NUMGRID, this->NUMGRID, 0, GL_RED, GL_FLOAT, density);
+
+    // Color texture
+    glGenTextures(1, &this->textureColor);
+    glBindTexture(GL_TEXTURE_1D, this->textureColor);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB, GL_FLOAT, this->colorMap.data());
 
     // Setup uniform buffer
     glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
@@ -107,7 +146,6 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) 
     std::filesystem::path vs_name = base_path / "shaders/vert.glsl";
     std::filesystem::path fs_name = base_path / "shaders/frag.glsl";
 
-
     this->shaderProgram = createShaderProgram(vs_name.c_str(), fs_name.c_str());
     glUseProgram(this->shaderProgram);
 
@@ -119,9 +157,21 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) 
 
 void Renderer::run_and_display(bool run, float aspect_ratio) {
 
+    // Run a timestep if ready
     if (run) {
         this->simulator->advance_single_timestep();
     }
+
+    // Get min and max of mass density
+    auto [mass_min, mass_max] = minmax_vec_elems(this->simulator->get_mass_density_ref()); 
+    
+    // Clipping factor TODO make adjustable and add this to UI
+    mass_max *= 0.25;
+
+    // Bind new data to texture buffer
+    glBindTexture(GL_TEXTURE_3D, this->texture3D);
+    auto *density = this->simulator->get_mass_density();
+    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, this->NUMGRID, this->NUMGRID, this->NUMGRID, GL_RED, GL_FLOAT, density);
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
@@ -131,7 +181,7 @@ void Renderer::run_and_display(bool run, float aspect_ratio) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(this->shaderProgram);
-    
+
     // Update UBO data
     glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
@@ -142,10 +192,29 @@ void Renderer::run_and_display(bool run, float aspect_ratio) {
         glm::value_ptr(this->camera->get_projection_matrix(aspect_ratio)));
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+    // Bind VBO to new data
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-    auto *vertices = simulator->get_positions();
+    auto *vertices = this->simulator->get_positions();
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * this->NUMBODS * 3, vertices);
 
+    // Grid parameters
+    glm::vec3 grid_origin(0.0f, 0.0f, 0.0f);
+    glm::vec3 grid_size(this->GRIDLEN, this->GRIDLEN, this->GRIDLEN);
+    glUniform3fv(glGetUniformLocation(shaderProgram, "grid_origin"), 1, glm::value_ptr(grid_origin));
+    glUniform3fv(glGetUniformLocation(shaderProgram, "grid_size"), 1, glm::value_ptr(grid_size));
+    glUniform1f(glGetUniformLocation(shaderProgram, "density_min"), mass_min);
+    glUniform1f(glGetUniformLocation(shaderProgram, "density_max"), mass_max);
+
+    // Bind textures
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_3D, this->texture3D);
+    glUniform1i(glGetUniformLocation(shaderProgram, "densityTexture"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_1D, this->textureColor);
+    glUniform1i(glGetUniformLocation(shaderProgram, "colorMapTexture"), 1);
+
+    // Bind VAO and draw
     glBindVertexArray(this->VAO);
     glDrawArrays(GL_POINTS, 0, this->NUMBODS);
     glBindVertexArray(0);

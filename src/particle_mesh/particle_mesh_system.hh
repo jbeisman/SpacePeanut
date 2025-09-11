@@ -22,11 +22,11 @@ public:
 	std::vector<std::array<float, 3>> pVel;								// particle velocities
 	std::vector<std::array<float, 3>> pAcc;								// particle accelerations
 	std::vector<std::array<float, 3>> gAcc;								// grid acceleration
+	std::vector<float, fftwf_allocator<float>> gMass; 					// grid mass distribution
 private:
 	void get_acceleration(const float time_scale);						// calculate long-range acceleration using the PM method
 
 	std::vector<float, fftwf_allocator<float>> gPot; 					// grid gravitational potential
-	std::vector<float, fftwf_allocator<float>> gMass; 					// grid mass distribution
 	std::vector<fftwf_complex, fftwf_allocator<fftwf_complex>> fMass; 	// fftw3 float32 complex type - used in DFTs
 	std::vector<std::array<short int,3>> fft_i;							// triple short int index for fft  (NGRID * NGRID * NGRID_HALF)
 	std::vector<std::array<short int,3>> grid_i;						// triple short int index for grid (NGRID * NGRID * NGRID)

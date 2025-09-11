@@ -69,7 +69,9 @@ bool ParticleMeshSimulator::sim_is_paused() { return (PAUSED) ? true : false; }
 void ParticleMeshSimulator::sim_change_dt(float new_dt) { space_time->update_dt(new_dt); }
 void ParticleMeshSimulator::sim_set_delay(int new_delay) { delay_ms = new_delay; }
 void ParticleMeshSimulator::sim_set_write_output(bool wo) { WRITE_OUTPUT = wo; }
-std::array<float,3> *ParticleMeshSimulator::get_positions() { return pm_system->pPos.data();}
+std::array<float,3>* ParticleMeshSimulator::get_positions() { return pm_system->pPos.data();}
+float* ParticleMeshSimulator::get_mass_density() { return pm_system->gMass.data();}
+std::vector<float, fftwf_allocator<float>>& ParticleMeshSimulator::get_mass_density_ref() { return pm_system->gMass;}
 
 // TODO -  improve and move
 void write_points(const int filenum, const std::vector<std::array<float, 3>>& Pos, const std::vector<std::array<float, 3>>& Vel, const float time_scale) {

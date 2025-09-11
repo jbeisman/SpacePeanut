@@ -69,9 +69,9 @@ public:
 	void sim_change_dt(float new_dt);
 	void sim_set_delay(int new_delay);
 	void sim_set_write_output(bool write_output);
-	std::array<float,3> *get_positions();
-	std::vector<int> get_indices();
-
+	std::array<float,3>* get_positions();
+	float* get_mass_density();
+	std::vector<float, fftwf_allocator<float>>& get_mass_density_ref();
 private:
 	std::unique_ptr<CosmicTime> space_time;
 	std::unique_ptr<ParticleMeshSystem> pm_system;

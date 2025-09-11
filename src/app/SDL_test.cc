@@ -240,7 +240,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     // Get input from user
     static int NGRID;
     static int NBODS = 2097152;
-    static float GMAX = 64.0;
+    static float GMAX = 128.0;
     static float RSHIFT = 50.0;
     static int NSTEPS = 1000;
     {
@@ -249,7 +249,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             ImGui::SeparatorText("Inputs");
             {
                 const char* items[] = { "32", "64", "128", "256", "512" };
-                static int NGRID_selector = 2;
+                static int NGRID_selector = 1;
                 ImGui::Combo("Grid resolution", &NGRID_selector, items, IM_ARRAYSIZE(items));
                 if (NGRID_selector == 0)
                     NGRID = 32;

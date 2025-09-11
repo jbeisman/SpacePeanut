@@ -4,6 +4,8 @@
 #include <vector>
 #include <array>
 #include <omp.h>
+#include <limits>
+#include <utility>
 
 
 template <typename T>
@@ -69,3 +71,24 @@ void magnitude_vec3_par(
   		outVec[i] = sqrtf( (inVec3[i][0]*inVec3[i][0] + inVec3[i][1]*inVec3[i][1] + inVec3[i][2]*inVec3[i][2]) * ts2_inv );
   	}
 }
+
+template <typename T>
+std::pair<float,float> minmax_vec_elems_par(const T& inVec)
+{
+
+	float min_val = std::numeric_limits<float>::max(); // Initialize min_val to a very large number
+    float max_val = std::numeric_limits<float>::min(); // Initialize max_val to a very small number
+
+    #pragma omp parallel for reduction(min: min_val) reduction(max: max_val)
+    for (size_t i = 0; i < inVec.size(); ++i) {
+        if (inVec[i] < min_val) {
+            min_val = inVec[i];
+        }
+        if (inVec[i] > max_val) {
+            max_val = inVec[i];
+        }
+    }
+
+    return std::make_pair(min_val, max_val);
+}
+

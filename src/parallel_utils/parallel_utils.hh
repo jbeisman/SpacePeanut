@@ -41,4 +41,11 @@ void magnitude_vec3(
 	const T& inVec3,
 	U& outVec);
 
+// Get min and max of vector
+template <typename T>
+std::pair<float,float> minmax_vec_elems(
+	const T& inVec);
+
+
 #include "par_utils_impl.hh"
+

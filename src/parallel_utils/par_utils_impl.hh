@@ -29,7 +29,9 @@ void magnitude_vec3_par(
 	const T& inVec3,
 	U& outVec);
 
-
+template <typename T>
+std::pair<float,float> minmax_vec_elems_par(
+	const T& inVec);
 
 // definitions of user-facing functions
 template <typename T>
@@ -74,6 +76,12 @@ void magnitude_vec3(
 	magnitude_vec3_par(time_scale, inVec3, outVec);
 }
 
+template <typename T>
+std::pair<float,float> minmax_vec_elems(
+	const T& inVec)
+{
+	return minmax_vec_elems_par(inVec);
+}
 
 // definitions of backend functions included here
 #if defined(USE_STD_PARALLEL)
@@ -81,3 +89,4 @@ void magnitude_vec3(
 #elif defined(USE_OPENMP)
 #include "par_utils_omp.hh"
 #endif
+

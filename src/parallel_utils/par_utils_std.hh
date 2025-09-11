@@ -5,7 +5,7 @@
 #include <array>
 #include <algorithm>
 #include <execution>
-
+#include <utility>
 
 template <typename T>
 void assign_vec_par(
@@ -68,3 +68,17 @@ void magnitude_vec3_par(
       	return sqrtf( (vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2]) * ts2_inv );
     });
 }
+
+
+template <typename T>
+std::pair<float,float> minmax_vec_elems_par(const T& inVec)
+{
+	auto minmax = std::minmax_element( std::execution::par_unseq,
+                                            inVec.begin(),
+                                            inVec.end());
+    float min_val = *minmax.first;
+    float max_val = *minmax.second;
+
+	return std::make_pair(min_val, max_val);
+}
+

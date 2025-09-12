@@ -1,9 +1,10 @@
 
 #include "renderer.hh"
 #include "parallel_utils.hh"
+
 #include <iostream>
 
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <SDL3/SDL.h>
@@ -11,11 +12,7 @@
 #include <filesystem>
 #include <stdexcept>
 
-#include <iostream>
 #include <vector>
-#include <algorithm>
-#include <execution>
-#include <utility>
 
 GLuint Renderer::compileShader(GLenum type, const char* path) {
     std::ifstream file(path);
@@ -76,9 +73,50 @@ Renderer::Renderer() {
 
 
     // Color Map (Simple "Viridis-like" gradient)
-    this->colorMap.push_back(glm::vec3(0.267f, 0.005f, 0.329f)); // Dark Purple
-    this->colorMap.push_back(glm::vec3(0.127f, 0.561f, 0.553f)); // Teal
-    this->colorMap.push_back(glm::vec3(0.993f, 0.906f, 0.145f)); // Yellow
+    //this->colorMap.push_back(glm::vec3(0.267f, 0.005f, 0.329f)); // Dark Purple
+    //this->colorMap.push_back(glm::vec3(0.127f, 0.561f, 0.553f)); // Teal
+    //this->colorMap.push_back(glm::vec3(0.993f, 0.906f, 0.145f)); // Yellow
+
+// more comlete viridis
+//this->colorMap.push_back(glm::vec3(0.267f, 0.005f, 0.329f)); // Dark Purple
+//this->colorMap.push_back(glm::vec3(0.198f, 0.297f, 0.528f)); // Dark Blue
+//this->colorMap.push_back(glm::vec3(0.127f, 0.561f, 0.553f)); // Teal
+//this->colorMap.push_back(glm::vec3(0.321f, 0.760f, 0.443f)); // Green
+//this->colorMap.push_back(glm::vec3(0.723f, 0.817f, 0.280f)); // Lime Green
+//this->colorMap.push_back(glm::vec3(0.993f, 0.906f, 0.145f)); // Yellow
+
+    // Color Map ("Magma-like" gradient)
+//this->colorMap.push_back(glm::vec3(0.000f, 0.000f, 0.000f)); // Black
+//this->colorMap.push_back(glm::vec3(0.086f, 0.071f, 0.301f)); // Dark Blue
+//this->colorMap.push_back(glm::vec3(0.505f, 0.170f, 0.463f)); // Purple
+//this->colorMap.push_back(glm::vec3(0.819f, 0.376f, 0.247f)); // Orange
+//this->colorMap.push_back(glm::vec3(0.992f, 0.707f, 0.268f)); // Light Orange
+//this->colorMap.push_back(glm::vec3(0.996f, 0.992f, 0.812f)); // Light Yellow
+
+// Color Map ("Plasma-like" gradient)
+//this->colorMap.push_back(glm::vec3(0.051f, 0.012f, 0.267f)); // Dark Blue
+//this->colorMap.push_back(glm::vec3(0.337f, 0.016f, 0.498f)); // Purple
+//this->colorMap.push_back(glm::vec3(0.710f, 0.059f, 0.506f)); // Red-Purple
+//this->colorMap.push_back(glm::vec3(0.922f, 0.306f, 0.365f)); // Orange-Red
+//this->colorMap.push_back(glm::vec3(0.976f, 0.612f, 0.188f)); // Orange
+//this->colorMap.push_back(glm::vec3(0.996f, 0.890f, 0.0f));    // Yellow
+
+// Color Map (Classic Rainbow gradient)
+//this->colorMap.push_back(glm::vec3(0.0f, 0.0f, 1.0f));     // Blue
+//this->colorMap.push_back(glm::vec3(0.0f, 0.5f, 1.0f));     // Light Blue
+//this->colorMap.push_back(glm::vec3(0.0f, 1.0f, 0.0f));     // Green
+//this->colorMap.push_back(glm::vec3(1.0f, 1.0f, 0.0f));     // Yellow
+//this->colorMap.push_back(glm::vec3(1.0f, 0.5f, 0.0f));     // Orange
+//this->colorMap.push_back(glm::vec3(1.0f, 0.0f, 0.0f));     // Red
+
+    // Color Map (Two-tone gradient)
+//this->colorMap.push_back(glm::vec3(0.976f, 0.612f, 0.188f)); // Orange
+//this->colorMap.push_back(glm::vec3(0.0f, 0.5f, 1.0f));     // Light Blue
+
+    // Color Map (Two-tone gradient)
+//this->colorMap.push_back(glm::vec3(0.976f, 0.612f, 0.188f)); // Orange
+//this->colorMap.push_back(glm::vec3(0.0f, 0.5f, 1.0f));     // Light Blue
+
 }
 
 void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) {
@@ -127,7 +165,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) 
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB, GL_FLOAT, this->colorMap.data());
+    //glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB, GL_FLOAT, this->colorMap.data());
 
     // Setup uniform buffer
     glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
@@ -155,16 +193,22 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX) 
 }
 
 
-void Renderer::run_and_display(bool run, float aspect_ratio) {
+void Renderer::run_and_display(bool run, float aspect_ratio, Color::ColorType color, bool change_color) {
 
     // Run a timestep if ready
     if (run) {
         this->simulator->advance_single_timestep();
     }
 
+    // Generate new color texture
+    if (change_color) {
+        this->colorMap = getColormap(color);
+        glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB, GL_FLOAT, this->colorMap.data());
+    }
+
     // Get min and max of mass density
     auto [mass_min, mass_max] = minmax_vec_elems(this->simulator->get_mass_density_ref()); 
-    
+
     // Clipping factor TODO make adjustable and add this to UI
     mass_max *= 0.25;
 

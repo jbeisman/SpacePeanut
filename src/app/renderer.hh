@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "color_palette.hh"
 #include <fstream>
 #include <memory>
 #include <vector>
@@ -24,6 +25,6 @@ public:
     std::vector<glm::vec3> colorMap;
     Renderer();
     void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
-    void run_and_display(bool run, float aspect_ratio);
+    void run_and_display(bool run, float aspect_ratio, Color::ColorType color, bool change_color);
 };
 

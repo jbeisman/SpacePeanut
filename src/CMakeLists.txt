@@ -4,11 +4,5 @@ add_subdirectory(fftw3f)
 add_subdirectory(parallel_utils)
 add_subdirectory(particle_mesh)
 add_subdirectory(simulator)
-
 add_subdirectory(app)
 
-add_executable(spacepeanut main.cc)
-
-target_link_libraries(spacepeanut PUBLIC simulator)
-
-install(TARGETS spacepeanut)

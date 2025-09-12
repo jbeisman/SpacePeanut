@@ -5,6 +5,7 @@
 #define GL3_PROTOTYPES 1
 
 #include <GL/glew.h>
+#include <glm/glm.hpp>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -45,6 +46,7 @@ public:
     bool execute_sim_init{false};
     bool pause_state{true};
     bool mouse_dragging{false};
+    bool change_color{true};
     std::unique_ptr<Renderer> renderer;
 };
 
@@ -243,6 +245,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     static float GMAX = 128.0;
     static float RSHIFT = 50.0;
     static int NSTEPS = 1000;
+    static Color::ColorType COLOR;
     {
         ImGui::Begin("Options");
 
@@ -292,6 +295,50 @@ SDL_AppResult SDL_AppIterate(void *appstate)
                 SDL_PushEvent(&sdl_quit);
             }
 
+
+static int COLOR_selector = 0;
+const char* coloritems[] = { "Magma", "BlueOrange", "Viridis", "Plasma", "Rainbow" };
+const char* color_label = coloritems[COLOR_selector];
+
+// 2. Create the combo box. The outer `if` block is for the dropdown menu itself.
+if (ImGui::BeginCombo("COLOR", color_label))
+{
+    // 3. Loop through all possible items.
+    for (int i = 0; i < IM_ARRAYSIZE(coloritems); ++i)
+    {
+        const bool is_selected = (COLOR_selector == i);
+
+        // 4. Create a selectable item inside the combo.
+        //    - `ImGui::Selectable()` returns true ONLY on the frame a new selection is made.
+        if (ImGui::Selectable(coloritems[i], is_selected))
+        {
+            // 5. Place your logic inside this block.
+            //    This code runs ONLY when the user clicks on a new item.
+            COLOR_selector = i;
+            if (COLOR_selector == 0)
+                COLOR = Color::ColorType::Magma;
+            else if (COLOR_selector == 1)
+                COLOR = Color::ColorType::BlueOrange;
+            else if (COLOR_selector == 2)
+                COLOR = Color::ColorType::Viridis;
+            else if (COLOR_selector == 3)
+                COLOR = Color::ColorType::Plasma;
+            else if (COLOR_selector == 4)
+                COLOR = Color::ColorType::Rainbow;
+
+            app->change_color =  true;
+        }
+
+        // Optional: Set the item to be the default focused one for keyboard navigation.
+        if (is_selected)
+        {
+            ImGui::SetItemDefaultFocus();
+        }
+    }
+    ImGui::EndCombo();
+}
+
+
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
         ImGui::End();
@@ -315,7 +362,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     if (app->sim_initialized) { 
         bool run_step = (app->renderer->simulator->sim_is_paused()) ? false : true;
         float aspect_ratio = io.DisplaySize.x / io.DisplaySize.y;
-        app->renderer->run_and_display(run_step, aspect_ratio);
+        app->renderer->run_and_display(run_step, aspect_ratio, COLOR, app->change_color);
+        app->change_color = false;
     }
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

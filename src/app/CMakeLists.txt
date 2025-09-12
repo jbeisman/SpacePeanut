@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
-add_executable(sdl_peanut SDL_test.cc camera.cc renderer.cc)
-target_link_libraries(sdl_peanut PRIVATE SDL3::SDL3 GLEW OpenGL imgui simulator)
+add_executable(spacepeanut app.cc camera.cc renderer.cc color_palette.cc)
+target_link_libraries(spacepeanut PRIVATE SDL3::SDL3 GLEW OpenGL imgui simulator)
 
-install(TARGETS sdl_peanut)
+install(TARGETS spacepeanut)
 
-# Assuming your shaders are in a 'shaders' subdirectory within your source directory
+# Install shaders into the run directory
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
-        DESTINATION "bin/shaders"  # Or "bin/shaders", "lib/myproject/shaders", etc.
-        FILES_MATCHING PATTERN "*.glsl"        # Optional: Only copy files matching this pattern
+        DESTINATION "bin/shaders"
+        FILES_MATCHING PATTERN "*.glsl"
 )

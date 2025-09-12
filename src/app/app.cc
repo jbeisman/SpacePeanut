@@ -240,7 +240,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     ImGuiIO& io = ImGui::GetIO();
 
     // Get input from user
-    static int NGRID;
+    static int NGRID = 64;
     static int NBODS = 2097152;
     static float GMAX = 128.0;
     static float RSHIFT = 50.0;
@@ -249,21 +249,40 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     {
         ImGui::Begin("Options");
 
-            ImGui::SeparatorText("Inputs");
+            static int NGRID_selector = 1;
+            const char* ngriditems[] = { "32", "64", "128", "256", "512" };
+            const char* ngrid_label = ngriditems[NGRID_selector];
+            
+            // 2. Create the combo box. The outer `if` block is for the dropdown menu itself.
+            if (ImGui::BeginCombo("Grid resolution", ngrid_label))
             {
-                const char* items[] = { "32", "64", "128", "256", "512" };
-                static int NGRID_selector = 1;
-                ImGui::Combo("Grid resolution", &NGRID_selector, items, IM_ARRAYSIZE(items));
-                if (NGRID_selector == 0)
-                    NGRID = 32;
-                else if (NGRID_selector == 1)
-                    NGRID = 64;
-                else if (NGRID_selector == 2)
-                    NGRID = 128;
-                else if (NGRID_selector == 3)
-                    NGRID = 256;
-                else if (NGRID_selector == 4)
-                    NGRID = 512;
+                // 3. Loop through all possible items.
+                for (int i = 0; i < IM_ARRAYSIZE(ngriditems); ++i)
+                {
+                    const bool is_selected = (NGRID_selector == i);
+            
+                    // 4. Create a selectable item inside the combo.
+                    //    - `ImGui::Selectable()` returns true ONLY on the frame a new selection is made.
+                    if (ImGui::Selectable(ngriditems[i], is_selected))
+                    {
+                        // 5. Place your logic inside this block.
+                        //    This code runs ONLY when the user clicks on a new item.
+                        NGRID_selector = i;
+                        if (NGRID_selector == 0)
+                            NGRID = 32;
+                        else if (NGRID_selector == 1)
+                            NGRID = 64;
+                        else if (NGRID_selector == 2)
+                            NGRID = 128;
+                        else if (NGRID_selector == 3)
+                            NGRID = 256;
+                        else if (NGRID_selector == 4)
+                            NGRID = 512;
+            
+                    }
+                    if (is_selected) { ImGui::SetItemDefaultFocus(); }
+                }
+                ImGui::EndCombo();
             }
 
             ImGui::InputInt("Number of particles", &NBODS);
@@ -272,7 +291,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             ImGui::InputInt("Number of timesteps", &NSTEPS);
 
 
-            ImGui::SeparatorText("Controls");
+
+        ImGui::SeparatorText("Controls");
             if (ImGui::Button("INITIALIZE")) {
                 app->execute_sim_init = true;
             } ImGui::SameLine();
@@ -296,47 +316,44 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             }
 
 
-static int COLOR_selector = 0;
-const char* coloritems[] = { "Magma", "BlueOrange", "Viridis", "Plasma", "Rainbow" };
-const char* color_label = coloritems[COLOR_selector];
-
-// 2. Create the combo box. The outer `if` block is for the dropdown menu itself.
-if (ImGui::BeginCombo("COLOR", color_label))
-{
-    // 3. Loop through all possible items.
-    for (int i = 0; i < IM_ARRAYSIZE(coloritems); ++i)
-    {
-        const bool is_selected = (COLOR_selector == i);
-
-        // 4. Create a selectable item inside the combo.
-        //    - `ImGui::Selectable()` returns true ONLY on the frame a new selection is made.
-        if (ImGui::Selectable(coloritems[i], is_selected))
-        {
-            // 5. Place your logic inside this block.
-            //    This code runs ONLY when the user clicks on a new item.
-            COLOR_selector = i;
-            if (COLOR_selector == 0)
-                COLOR = Color::ColorType::Magma;
-            else if (COLOR_selector == 1)
-                COLOR = Color::ColorType::BlueOrange;
-            else if (COLOR_selector == 2)
-                COLOR = Color::ColorType::Viridis;
-            else if (COLOR_selector == 3)
-                COLOR = Color::ColorType::Plasma;
-            else if (COLOR_selector == 4)
-                COLOR = Color::ColorType::Rainbow;
-
-            app->change_color =  true;
-        }
-
-        // Optional: Set the item to be the default focused one for keyboard navigation.
-        if (is_selected)
-        {
-            ImGui::SetItemDefaultFocus();
-        }
-    }
-    ImGui::EndCombo();
-}
+            static int COLOR_selector = 0;
+            const char* coloritems[] = { "Magma", "BlueOrange", "Viridis", "Plasma", "Rainbow" };
+            const char* color_label = coloritems[COLOR_selector];
+            
+            // 2. Create the combo box. The outer `if` block is for the dropdown menu itself.
+            if (ImGui::BeginCombo("COLOR", color_label))
+            {
+                // 3. Loop through all possible items.
+                for (int i = 0; i < IM_ARRAYSIZE(coloritems); ++i)
+                {
+                    const bool is_selected = (COLOR_selector == i);
+            
+                    // 4. Create a selectable item inside the combo.
+                    //    - `ImGui::Selectable()` returns true ONLY on the frame a new selection is made.
+                    if (ImGui::Selectable(coloritems[i], is_selected))
+                    {
+                        // 5. Place your logic inside this block.
+                        //    This code runs ONLY when the user clicks on a new item.
+                        COLOR_selector = i;
+                        if (COLOR_selector == 0)
+                            COLOR = Color::ColorType::Magma;
+                        else if (COLOR_selector == 1)
+                            COLOR = Color::ColorType::BlueOrange;
+                        else if (COLOR_selector == 2)
+                            COLOR = Color::ColorType::Viridis;
+                        else if (COLOR_selector == 3)
+                            COLOR = Color::ColorType::Plasma;
+                        else if (COLOR_selector == 4)
+                            COLOR = Color::ColorType::Rainbow;
+            
+                        app->change_color =  true;
+                    }
+            
+                    // Optional: Set the item to be the default focused one for keyboard navigation.
+                    if (is_selected) { ImGui::SetItemDefaultFocus(); }
+                }
+                ImGui::EndCombo();
+            }
 
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);

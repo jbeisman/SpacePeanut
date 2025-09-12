@@ -24,3 +24,8 @@ cmake --workflow --preset dbg-std
 ```
 
 ## Screenshots
+
+![A screenshot of the program in action 1](media/simulation1.png)
+
+![A screenshot of the program in action 2](media/simulation2.png)
+

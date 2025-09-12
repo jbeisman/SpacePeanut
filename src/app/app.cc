@@ -313,6 +313,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
       app->change_color = true;
       app->renderer->reset_simulator();
       app->renderer->simulator->sim_change_pause_state(app->pause_state);
+      app->renderer->simulator->sim_set_write_output(false);
     }
     ImGui::SameLine();
 

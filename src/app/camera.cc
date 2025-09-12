@@ -65,7 +65,7 @@ void Camera::update_view_matrix() {
 
 glm::mat4x4 Camera::get_view_matrix() const { return view_matrix; }
 glm::mat4x4 Camera::get_projection_matrix(float aspect_ratio) const {
-  return glm::perspective(glm::radians(60.0f), aspect_ratio, 0.1f, 200.0f);
+  return glm::perspective(glm::radians(60.0f), aspect_ratio, 0.1f, 1000.0f);
 }
 glm::mat4x4 Camera::get_model_matrix() const { return glm::mat4x4(1.0f); }
 glm::vec3 Camera::get_cam_pos() const { return cam_pos; }

@@ -244,7 +244,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
   static int NSTEPS = 1000;
   static Color::ColorType COLOR;
   {
-    ImGui::Begin("Options");
+    ImGui::Begin("INPUTS");
 
     static int NGRID_selector = 1;
     const char *ngriditems[] = {"32", "64", "128", "256", "512"};
@@ -287,7 +287,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     ImGui::InputFloat("Redshift value", &RSHIFT);
     ImGui::InputInt("Number of timesteps", &NSTEPS);
 
-    ImGui::SeparatorText("Controls");
+    ImGui::SeparatorText("CONTROLS");
     if (ImGui::Button("INITIALIZE")) {
       app->execute_sim_init = true;
     }

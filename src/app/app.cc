@@ -306,6 +306,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
     ImGui::SameLine();
 
+    if (ImGui::Button("RESET")) {
+      app->pause_state = true;
+      app->execute_sim_init = false;
+      app->sim_initialized = false;
+      app->change_color = true;
+      app->renderer->reset_simulator();
+      app->renderer->simulator->sim_change_pause_state(app->pause_state);
+    }
+    ImGui::SameLine();
+
     if (ImGui::Button("QUIT")) {
       // Stop and exit
       SDL_Event sdl_quit;

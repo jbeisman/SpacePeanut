@@ -69,52 +69,6 @@ Renderer::Renderer() {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-  // Color Map (Simple "Viridis-like" gradient)
-  // this->colorMap.push_back(glm::vec3(0.267f, 0.005f, 0.329f)); // Dark Purple
-  // this->colorMap.push_back(glm::vec3(0.127f, 0.561f, 0.553f)); // Teal
-  // this->colorMap.push_back(glm::vec3(0.993f, 0.906f, 0.145f)); // Yellow
-
-  // more comlete viridis
-  // this->colorMap.push_back(glm::vec3(0.267f, 0.005f, 0.329f)); // Dark Purple
-  // this->colorMap.push_back(glm::vec3(0.198f, 0.297f, 0.528f)); // Dark Blue
-  // this->colorMap.push_back(glm::vec3(0.127f, 0.561f, 0.553f)); // Teal
-  // this->colorMap.push_back(glm::vec3(0.321f, 0.760f, 0.443f)); // Green
-  // this->colorMap.push_back(glm::vec3(0.723f, 0.817f, 0.280f)); // Lime Green
-  // this->colorMap.push_back(glm::vec3(0.993f, 0.906f, 0.145f)); // Yellow
-
-  // Color Map ("Magma-like" gradient)
-  // this->colorMap.push_back(glm::vec3(0.000f, 0.000f, 0.000f)); // Black
-  // this->colorMap.push_back(glm::vec3(0.086f, 0.071f, 0.301f)); // Dark Blue
-  // this->colorMap.push_back(glm::vec3(0.505f, 0.170f, 0.463f)); // Purple
-  // this->colorMap.push_back(glm::vec3(0.819f, 0.376f, 0.247f)); // Orange
-  // this->colorMap.push_back(glm::vec3(0.992f, 0.707f, 0.268f)); // Light
-  // Orange this->colorMap.push_back(glm::vec3(0.996f, 0.992f, 0.812f)); //
-  // Light Yellow
-
-  // Color Map ("Plasma-like" gradient)
-  // this->colorMap.push_back(glm::vec3(0.051f, 0.012f, 0.267f)); // Dark Blue
-  // this->colorMap.push_back(glm::vec3(0.337f, 0.016f, 0.498f)); // Purple
-  // this->colorMap.push_back(glm::vec3(0.710f, 0.059f, 0.506f)); // Red-Purple
-  // this->colorMap.push_back(glm::vec3(0.922f, 0.306f, 0.365f)); // Orange-Red
-  // this->colorMap.push_back(glm::vec3(0.976f, 0.612f, 0.188f)); // Orange
-  // this->colorMap.push_back(glm::vec3(0.996f, 0.890f, 0.0f));    // Yellow
-
-  // Color Map (Classic Rainbow gradient)
-  // this->colorMap.push_back(glm::vec3(0.0f, 0.0f, 1.0f));     // Blue
-  // this->colorMap.push_back(glm::vec3(0.0f, 0.5f, 1.0f));     // Light Blue
-  // this->colorMap.push_back(glm::vec3(0.0f, 1.0f, 0.0f));     // Green
-  // this->colorMap.push_back(glm::vec3(1.0f, 1.0f, 0.0f));     // Yellow
-  // this->colorMap.push_back(glm::vec3(1.0f, 0.5f, 0.0f));     // Orange
-  // this->colorMap.push_back(glm::vec3(1.0f, 0.0f, 0.0f));     // Red
-
-  // Color Map (Two-tone gradient)
-  // this->colorMap.push_back(glm::vec3(0.976f, 0.612f, 0.188f)); // Orange
-  // this->colorMap.push_back(glm::vec3(0.0f, 0.5f, 1.0f));     // Light Blue
-
-  // Color Map (Two-tone gradient)
-  // this->colorMap.push_back(glm::vec3(0.976f, 0.612f, 0.188f)); // Orange
-  // this->colorMap.push_back(glm::vec3(0.0f, 0.5f, 1.0f));     // Light Blue
 }
 
 void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
@@ -275,4 +229,10 @@ void Renderer::run_and_display(bool run, float aspect_ratio,
   glDrawArrays(GL_POINTS, 0, this->NUMBODS);
   glBindVertexArray(0);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Reset to normal mode
+}
+
+
+void Renderer::reset_simulator() {
+  this->simulator.reset();
+  this->simulator = std::make_unique<ParticleMeshSimulator>();
 }

@@ -27,4 +27,5 @@ public:
   void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
   void run_and_display(bool run, float aspect_ratio, Color::ColorType color,
                        bool change_color);
+  void reset_simulator();
 };

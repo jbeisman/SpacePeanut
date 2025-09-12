@@ -236,3 +236,16 @@ void Renderer::reset_simulator() {
   this->simulator.reset();
   this->simulator = std::make_unique<ParticleMeshSimulator>();
 }
+
+Renderer::~Renderer() {
+  glDisableVertexAttribArray(0);
+  glDeleteBuffers(1, &this->VBO);
+  glDeleteBuffers(1, &this->UBO);
+  glBindTexture(GL_TEXTURE_3D, 0);
+  glDeleteTextures(1, &this->texture3D);
+  glBindTexture(GL_TEXTURE_1D, 0);
+  glDeleteTextures(1, &this->textureColor);
+  glUseProgram(0);
+  glDeleteProgram(this->shaderProgram);
+  glDeleteVertexArrays(1, &this->VAO);
+}

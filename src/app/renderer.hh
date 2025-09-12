@@ -21,9 +21,12 @@ private:
 public:
   std::unique_ptr<ParticleMeshSimulator> simulator;
   std::unique_ptr<Camera> camera;
-  GLuint shaderProgram, texture3D, VAO, VBO, UBO, textureColor;
   std::vector<glm::vec3> colorMap;
+  GLuint shaderProgram;
+  GLuint texture3D, textureColor;
+  GLuint VAO, VBO, UBO;
   Renderer();
+  ~Renderer();
   void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
   void run_and_display(bool run, float aspect_ratio, Color::ColorType color,
                        bool change_color);

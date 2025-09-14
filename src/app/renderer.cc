@@ -152,7 +152,8 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
 }
 
 void Renderer::run_and_display(bool run, float aspect_ratio,
-                               Color::ColorType color, bool change_color) {
+                               Color::ColorType color, bool change_color,
+                               float mass_clip_factor) {
 
   // Run a timestep if ready
   if (run) {
@@ -170,8 +171,8 @@ void Renderer::run_and_display(bool run, float aspect_ratio,
   auto [mass_min, mass_max] =
       minmax_vec_elems(this->simulator->get_mass_density_ref());
 
-  // Clipping factor TODO make adjustable and add this to UI
-  mass_max *= 0.25;
+  // Clipping factor
+  mass_max *= mass_clip_factor;
 
   // Bind new data to texture buffer
   glBindTexture(GL_TEXTURE_3D, this->texture3D);

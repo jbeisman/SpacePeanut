@@ -243,6 +243,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
   static float RSHIFT = 50.0;
   static int NSTEPS = 1000;
   static Color::ColorType COLOR;
+  static float CLIP_FACTOR = 1.0f;;
   {
     ImGui::Begin("INPUTS");
 
@@ -366,6 +367,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
       ImGui::EndCombo();
     }
 
+
+    ImGui::SliderFloat("CLIP FACTOR", &CLIP_FACTOR, 0.001f, 1.0f, "Value: %.3f");
+
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / io.Framerate, io.Framerate);
 
@@ -388,7 +392,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     bool run_step = (app->renderer->simulator->sim_is_paused()) ? false : true;
     float aspect_ratio = io.DisplaySize.x / io.DisplaySize.y;
     app->renderer->run_and_display(run_step, aspect_ratio, COLOR,
-                                   app->change_color);
+                                   app->change_color, CLIP_FACTOR);
     app->change_color = false;
   }
 

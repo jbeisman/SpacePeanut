@@ -368,7 +368,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
 
 
-    ImGui::SliderFloat("CLIP FACTOR", &CLIP_FACTOR, 0.001f, 1.0f, "Value: %.3f");
+    ImGui::SliderFloat("CLIP FACTOR", &CLIP_FACTOR, 0.000001f, 1.0f, "Value: %.6f", ImGuiSliderFlags_Logarithmic);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / io.Framerate, io.Framerate);

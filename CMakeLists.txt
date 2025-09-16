@@ -42,9 +42,8 @@ endif("${isSystemDir}" STREQUAL "-1")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Find external libraries
-find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(glfw3 REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(glm REQUIRED)
 find_package(FFTWF REQUIRED)
 find_package(OpenMP REQUIRED)

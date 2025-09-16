@@ -27,7 +27,7 @@ void ParticleMeshSimulator::initialize_simulation(const float redshift,
   space_time->setup_time(redshift, ntimesteps);
   float time_scale = space_time->get_time_scale();
   pm_system->initialize_system(
-      -100.0, 100.0,
+      -10000.0, 10000.0,
       time_scale); // TODO - better initialization system and user options
   if (WRITE_OUTPUT == true)
     write_points(filenum++, pm_system->pPos, pm_system->pVel, time_scale);

@@ -160,14 +160,28 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
 void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
                               bool change_color, float mass_clip_factor) {
 
-  // Run a timestep if ready
   if (!simulator->sim_is_paused()) {
+
+    // Run a timestep if ready
     this->simulator->advance_single_timestep();
 
+    // Get density min and max
     auto [mass_minimum, mass_maximum] =
       minmax_vec_elems(this->simulator->get_mass_density_ref());
     this->mass_min = mass_minimum;
     this->mass_max = mass_maximum;
+
+    // Bind new density data to texture buffer
+    glBindTexture(GL_TEXTURE_3D, this->texture3D);
+    auto *density = this->simulator->get_mass_density();
+    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, this->NUMGRID, this->NUMGRID,
+                    this->NUMGRID, GL_RED, GL_FLOAT, density);
+
+    // Bind new position data to VBO
+    glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+    auto *vertices = this->simulator->get_positions();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * this->NUMBODS * 3,
+                    vertices);
   }
 
   // Generate new color texture
@@ -179,12 +193,6 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
 
   // Clipping factor
   float clipped_mass_max = this->mass_max * mass_clip_factor;
-
-  // Bind new data to texture buffer
-  glBindTexture(GL_TEXTURE_3D, this->texture3D);
-  auto *density = this->simulator->get_mass_density();
-  glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, this->NUMGRID, this->NUMGRID,
-                  this->NUMGRID, GL_RED, GL_FLOAT, density);
 
   // Enable depth test
   glEnable(GL_DEPTH_TEST);
@@ -205,12 +213,6 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
       GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), sizeof(glm::mat4),
       glm::value_ptr(this->camera->get_projection_matrix(aspect_ratio)));
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-  // Bind VBO to new data
-  glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-  auto *vertices = this->simulator->get_positions();
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * this->NUMBODS * 3,
-                  vertices);
 
   // Grid parameters
   glm::vec3 grid_origin(0.0f, 0.0f, 0.0f);

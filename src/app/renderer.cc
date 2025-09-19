@@ -81,6 +81,12 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
       glm::vec3(GMAX / 2, GMAX / 2, GMAX / 2), glm::vec3(0.0f, 1.0f, 0.0f));
 
   this->simulator->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
+
+  auto [mass_minimum, mass_maximum] =
+      minmax_vec_elems(this->simulator->get_mass_density_ref());
+  this->mass_min = mass_minimum;
+  this->mass_max = mass_maximum;
+
   auto *vertices = this->simulator->get_positions();
 
   // Generate buffers
@@ -151,13 +157,17 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
                         0); // 0 = binding point
 }
 
-void Renderer::run_and_display(bool run, float aspect_ratio,
-                               Color::ColorType color, bool change_color,
-                               float mass_clip_factor) {
+void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
+                              bool change_color, float mass_clip_factor) {
 
   // Run a timestep if ready
-  if (run) {
+  if (!simulator->sim_is_paused()) {
     this->simulator->advance_single_timestep();
+
+    auto [mass_minimum, mass_maximum] =
+      minmax_vec_elems(this->simulator->get_mass_density_ref());
+    this->mass_min = mass_minimum;
+    this->mass_max = mass_maximum;
   }
 
   // Generate new color texture
@@ -167,12 +177,8 @@ void Renderer::run_and_display(bool run, float aspect_ratio,
                  GL_FLOAT, this->colorMap.data());
   }
 
-  // Get min and max of mass density
-  auto [mass_min, mass_max] =
-      minmax_vec_elems(this->simulator->get_mass_density_ref());
-
   // Clipping factor
-  mass_max *= mass_clip_factor;
+  float clipped_mass_max = this->mass_max * mass_clip_factor;
 
   // Bind new data to texture buffer
   glBindTexture(GL_TEXTURE_3D, this->texture3D);
@@ -213,8 +219,8 @@ void Renderer::run_and_display(bool run, float aspect_ratio,
                glm::value_ptr(grid_origin));
   glUniform3fv(glGetUniformLocation(shaderProgram, "grid_size"), 1,
                glm::value_ptr(grid_size));
-  glUniform1f(glGetUniformLocation(shaderProgram, "density_min"), mass_min);
-  glUniform1f(glGetUniformLocation(shaderProgram, "density_max"), mass_max);
+  glUniform1f(glGetUniformLocation(shaderProgram, "density_min"), this->mass_min);
+  glUniform1f(glGetUniformLocation(shaderProgram, "density_max"), clipped_mass_max);
 
   // Bind textures
   glActiveTexture(GL_TEXTURE0);

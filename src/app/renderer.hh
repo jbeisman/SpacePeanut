@@ -12,23 +12,28 @@
 #include <GL/glew.h>
 
 class Renderer {
-private:
-  int NUMBODS, NUMGRID;
-  float GRIDLEN;
-  GLuint compileShader(GLenum type, const char *path);
-  GLuint createShaderProgram(const char *vertexPath, const char *fragmentPath);
-
 public:
-  std::unique_ptr<ParticleMeshSimulator> simulator;
-  std::unique_ptr<Camera> camera;
-  std::vector<glm::vec3> colorMap;
-  GLuint shaderProgram;
-  GLuint texture3D, textureColor;
-  GLuint VAO, VBO, UBO;
   Renderer();
   ~Renderer();
   void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
-  void run_and_display(bool run, float aspect_ratio, Color::ColorType color,
+  void run_and_display(float aspect_ratio, Color::ColorType color,
                        bool change_color, float mass_clip_factor);
   void reset_simulator();
+  std::unique_ptr<ParticleMeshSimulator> simulator;
+  std::unique_ptr<Camera> camera;
+private:
+  GLuint compileShader(GLenum type, const char *path);
+  GLuint createShaderProgram(const char *vertexPath, const char *fragmentPath);
+  int NUMBODS;
+  int NUMGRID;
+  float GRIDLEN;
+  float mass_min;
+  float mass_max;
+  std::vector<glm::vec3> colorMap;
+  GLuint shaderProgram;
+  GLuint texture3D;
+  GLuint textureColor;
+  GLuint VAO;
+  GLuint VBO;
+  GLuint UBO;
 };

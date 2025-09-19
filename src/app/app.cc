@@ -400,9 +400,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
   // Render particles if they exist and run simulation if ready
   if (app->sim_initialized) {
-    bool run_step = (app->renderer->simulator->sim_is_paused()) ? false : true;
     float aspect_ratio = io.DisplaySize.x / io.DisplaySize.y;
-    app->renderer->run_and_display(run_step, aspect_ratio, COLOR,
+    app->renderer->run_and_display(aspect_ratio, COLOR,
                                    app->change_color, CLIP_FACTOR);
     app->change_color = false;
   }

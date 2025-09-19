@@ -68,7 +68,6 @@ Renderer::Renderer() {
   glEnable(GL_PROGRAM_POINT_SIZE);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,

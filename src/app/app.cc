@@ -40,7 +40,7 @@ public:
   ~AppState() = default;
   SDL_Window *window_ptr;
   SDL_GLContext context_ptr;
-  ImVec4 clear_color{ImVec4(0.0f, 0.0f, 0.0f, 1.00f)};
+  ImVec4 clear_color{ImVec4(0.45f, 0.55f, 0.60f, 1.00f)};
   bool app_finished{false};
   bool sim_initialized{false};
   bool execute_sim_init{false};
@@ -336,6 +336,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
       SDL_PushEvent(&sdl_quit);
     }
 
+    ImGui::ColorEdit3("clear color", (float*)&app->clear_color);
+
     static int COLOR_selector = 0;
     const char *coloritems[] = {"Magma", "BlueOrange", "Viridis", "Plasma",
                                 "Rainbow"};
@@ -396,6 +398,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
   // Rendering
   ImGui::Render();
   glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+  glClearColor( app->clear_color.x * app->clear_color.w,
+                app->clear_color.y * app->clear_color.w,
+                app->clear_color.z * app->clear_color.w,
+                app->clear_color.w);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Render particles if they exist and run simulation if ready

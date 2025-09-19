@@ -101,7 +101,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   // Bind vertex buffer and setup data
   glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * NBODS * 3, vertices,
-               GL_STATIC_DRAW);
+               GL_DYNAMIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
                         (void *)0);
 

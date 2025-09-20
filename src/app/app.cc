@@ -118,7 +118,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   }
 
   SDL_GL_MakeCurrent(app->window_ptr, app->context_ptr);
-  SDL_GL_SetSwapInterval(1); // Enable vsync
+  SDL_GL_SetSwapInterval(-1); // Enable adaptive vsync
   SDL_SetWindowPosition(app->window_ptr, SDL_WINDOWPOS_CENTERED,
                         SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(app->window_ptr);

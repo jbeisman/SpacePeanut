@@ -31,9 +31,6 @@
 #include "renderer.hh"
 #include "simulator.hh"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-
 class AppState {
 public:
   AppState();
@@ -106,8 +103,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   SDL_WindowFlags window_flags =
       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-  app->window_ptr = SDL_CreateWindow("ImGui+SDL3+OpenGL3", WINDOW_WIDTH,
-                                     WINDOW_HEIGHT, window_flags);
+  app->window_ptr = SDL_CreateWindow("ImGui+SDL3+OpenGL3", 1280,
+                                     800, window_flags);
   app->context_ptr = SDL_GL_CreateContext(app->window_ptr);
 
   if (app->window_ptr == nullptr) {
@@ -319,13 +316,15 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     ImGui::SameLine();
 
     if (ImGui::Button("RESET")) {
-      app->pause_state = true;
-      app->execute_sim_init = false;
-      app->sim_initialized = false;
-      app->change_color = true;
-      app->renderer->reset_simulator();
-      app->renderer->simulator->sim_change_pause_state(app->pause_state);
-      app->renderer->simulator->sim_set_write_output(false);
+      if (app->sim_initialized) {
+        app->pause_state = true;
+        app->execute_sim_init = false;
+        app->sim_initialized = false;
+        app->change_color = true;
+        app->renderer->reset_simulator();
+        app->renderer->simulator->sim_change_pause_state(app->pause_state);
+        app->renderer->simulator->sim_set_write_output(false);
+      }
     }
     ImGui::SameLine();
 
@@ -336,7 +335,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
       SDL_PushEvent(&sdl_quit);
     }
 
-    ImGui::ColorEdit3("clear color", (float*)&app->clear_color);
+    ImGui::ColorEdit3("Clear color", (float*)&app->clear_color);
 
     static int COLOR_selector = 0;
     const char *coloritems[] = {"Magma", "BlueOrange", "Viridis", "Plasma",
@@ -345,7 +344,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     // 2. Create the combo box. The outer `if` block is for the dropdown menu
     // itself.
-    if (ImGui::BeginCombo("COLOR", color_label)) {
+    if (ImGui::BeginCombo("Color palette", color_label)) {
       // 3. Loop through all possible items.
       for (int i = 0; i < IM_ARRAYSIZE(coloritems); ++i) {
         const bool is_selected = (COLOR_selector == i);
@@ -381,7 +380,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
 
 
-    ImGui::SliderFloat("CLIP FACTOR", &CLIP_FACTOR, 0.000001f, 1.0f, "Value: %.6f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Clip factor", &CLIP_FACTOR, 0.000001f, 1.0f, "Value: %.6f", ImGuiSliderFlags_Logarithmic);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / io.Framerate, io.Framerate);

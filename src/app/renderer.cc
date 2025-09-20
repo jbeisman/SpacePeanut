@@ -126,8 +126,6 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  // glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB,
-  // GL_FLOAT, this->colorMap.data());
 
   // Setup uniform buffer
   glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
@@ -153,7 +151,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   // Add uniform block to shader program
   GLuint blockIndex = glGetUniformBlockIndex(this->shaderProgram, "UBO");
   glUniformBlockBinding(this->shaderProgram, blockIndex,
-                        0); // 0 = binding point
+                        0);
 }
 
 void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
@@ -193,13 +191,6 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
   // Clipping factor
   float clipped_mass_max = this->mass_max * mass_clip_factor;
 
-  // Enable depth test
-  glEnable(GL_DEPTH_TEST);
-  // Accept fragment if it is closer to the camera than the former one
-  glDepthFunc(GL_LESS);
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   glUseProgram(this->shaderProgram);
 
   // Update UBO data
@@ -236,7 +227,6 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
   glBindVertexArray(this->VAO);
   glDrawArrays(GL_POINTS, 0, this->NUMBODS);
   glBindVertexArray(0);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Reset to normal mode
 }
 
 

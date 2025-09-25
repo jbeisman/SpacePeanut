@@ -129,8 +129,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
 
   // Setup uniform buffer
   glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
-  glBufferData(GL_UNIFORM_BUFFER, 3 * sizeof(glm::mat4), nullptr,
-               GL_DYNAMIC_DRAW); // Allocate space only
+  glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Bind UBO to binding point 0
@@ -152,6 +151,14 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   GLuint blockIndex = glGetUniformBlockIndex(this->shaderProgram, "UBO");
   glUniformBlockBinding(this->shaderProgram, blockIndex,
                         0);
+  
+  this->grid_origin_loc = glGetUniformLocation(this->shaderProgram, "grid_origin");
+  this->grid_size_loc = glGetUniformLocation(this->shaderProgram, "grid_size");
+  this->density_min_loc = glGetUniformLocation(this->shaderProgram, "density_min");
+  this->density_max_loc = glGetUniformLocation(this->shaderProgram, "density_max");
+  this->densityTexture_loc = glGetUniformLocation(this->shaderProgram, "densityTexture");
+  this->colorMapTexture_loc = glGetUniformLocation(this->shaderProgram, "colorMapTexture");
+
 }
 
 void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
@@ -191,37 +198,33 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
   // Clipping factor
   float clipped_mass_max = this->mass_max * mass_clip_factor;
 
-  glUseProgram(this->shaderProgram);
+  //glUseProgram(this->shaderProgram);
 
   // Update UBO data
   glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
-                  glm::value_ptr(this->camera->get_model_matrix()));
-  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
                   glm::value_ptr(this->camera->get_view_matrix()));
   glBufferSubData(
-      GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), sizeof(glm::mat4),
+      GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
       glm::value_ptr(this->camera->get_projection_matrix(aspect_ratio)));
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Grid parameters
   glm::vec3 grid_origin(0.0f, 0.0f, 0.0f);
   glm::vec3 grid_size(this->GRIDLEN, this->GRIDLEN, this->GRIDLEN);
-  glUniform3fv(glGetUniformLocation(shaderProgram, "grid_origin"), 1,
-               glm::value_ptr(grid_origin));
-  glUniform3fv(glGetUniformLocation(shaderProgram, "grid_size"), 1,
-               glm::value_ptr(grid_size));
-  glUniform1f(glGetUniformLocation(shaderProgram, "density_min"), this->mass_min);
-  glUniform1f(glGetUniformLocation(shaderProgram, "density_max"), clipped_mass_max);
+  glUniform3fv(this->grid_origin_loc, 1,glm::value_ptr(grid_origin));
+  glUniform3fv(this->grid_size_loc, 1, glm::value_ptr(grid_size));
+  glUniform1f(this->density_min_loc, this->mass_min);
+  glUniform1f(this->density_max_loc, clipped_mass_max);
 
   // Bind textures
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_3D, this->texture3D);
-  glUniform1i(glGetUniformLocation(shaderProgram, "densityTexture"), 0);
+  glUniform1i(this->densityTexture_loc, 0);
 
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_1D, this->textureColor);
-  glUniform1i(glGetUniformLocation(shaderProgram, "colorMapTexture"), 1);
+  glUniform1i(this->colorMapTexture_loc, 1);
 
   // Bind VAO and draw
   glBindVertexArray(this->VAO);

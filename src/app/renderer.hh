@@ -36,4 +36,10 @@ private:
   GLuint VAO;
   GLuint VBO;
   GLuint UBO;
+  GLuint grid_origin_loc;
+  GLuint grid_size_loc;
+  GLuint density_min_loc;
+  GLuint density_max_loc;
+  GLuint densityTexture_loc;
+  GLuint colorMapTexture_loc;
 };

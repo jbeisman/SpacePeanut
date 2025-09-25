@@ -201,9 +201,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
     if (app->mouse_dragging) {
 
       if (app->renderer->camera != nullptr && !io.WantCaptureMouse) {
+        int w, h;
+        SDL_GetWindowSizeInPixels(app->window_ptr, &w, &h);
         app->renderer->camera->update_drag(
             glm::vec2(ev->motion.x, ev->motion.y),
-            glm::vec2(io.DisplaySize.x, io.DisplaySize.y));
+            glm::vec2(w, h));
       }
     }
     break;
@@ -388,24 +390,29 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     ImGui::End();
   }
 
-  // Initialize renderer, simulation, camera
-  if (app->execute_sim_init && !app->sim_initialized) {
-    app->renderer->init(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
-    app->sim_initialized = true;
-  }
 
   // Rendering
   ImGui::Render();
-  glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+
+  int w, h;
+  SDL_GetWindowSizeInPixels(app->window_ptr, &w, &h);
+  glViewport(0, 0, w, h);
+
   glClearColor( app->clear_color.x * app->clear_color.w,
                 app->clear_color.y * app->clear_color.w,
                 app->clear_color.z * app->clear_color.w,
                 app->clear_color.w);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Initialize renderer, simulation, camera
+  if (app->execute_sim_init && !app->sim_initialized) {
+    app->renderer->init(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
+    app->sim_initialized = true;
+  }
+
   // Render particles if they exist and run simulation if ready
   if (app->sim_initialized) {
-    float aspect_ratio = io.DisplaySize.x / io.DisplaySize.y;
+    float aspect_ratio = static_cast<float>(w) / static_cast<float>(h);
     app->renderer->run_and_display(aspect_ratio, COLOR,
                                    app->change_color, CLIP_FACTOR);
     app->change_color = false;

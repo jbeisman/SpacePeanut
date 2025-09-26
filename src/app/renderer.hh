@@ -2,12 +2,12 @@
 #pragma once
 
 #include "color_palette.hh"
+#include "camera.hh"
+#include "simulator.hh"
+
 #include <fstream>
 #include <memory>
 #include <vector>
-
-#include "camera.hh"
-#include "simulator.hh"
 
 #include <GL/glew.h>
 
@@ -18,10 +18,10 @@ public:
   void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
   void change_color(Color::ColorType color);
   void update();
-  void display(float aspect_ratio, float mass_clip_factor);
+  void display(float aspect_ratio, float mass_clip_factor) const;
   void reset_simulator();
   std::unique_ptr<ParticleMeshSimulator> simulator;
-  std::unique_ptr<Camera> camera;
+  Camera camera;
 private:
   GLuint compile_shader(GLenum type, const char *path);
   GLuint create_shader_program(const char *vertexPath, const char *fragmentPath);

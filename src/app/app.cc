@@ -190,8 +190,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
     if (ev->button.button == SDL_BUTTON_LEFT) {
       app->mouse_dragging = true;
 
-      if (app->renderer->camera != nullptr && !io.WantCaptureMouse) {
-        app->renderer->camera->start_drag(
+      if (!io.WantCaptureMouse) {
+        app->renderer->camera.start_drag(
             glm::vec2(ev->button.x, ev->button.y));
       }
     }
@@ -200,10 +200,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
   case SDL_EVENT_MOUSE_MOTION:
     if (app->mouse_dragging) {
 
-      if (app->renderer->camera != nullptr && !io.WantCaptureMouse) {
+      if (!io.WantCaptureMouse) {
         int w, h;
         SDL_GetWindowSizeInPixels(app->window_ptr, &w, &h);
-        app->renderer->camera->update_drag(
+        app->renderer->camera.update_drag(
             glm::vec2(ev->motion.x, ev->motion.y),
             glm::vec2(w, h));
       }
@@ -214,15 +214,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
     if (ev->button.button == SDL_BUTTON_LEFT) {
       app->mouse_dragging = false;
 
-      if (app->renderer->camera != nullptr && !io.WantCaptureMouse) {
-        app->renderer->camera->end_drag();
+      if (!io.WantCaptureMouse) {
+        app->renderer->camera.end_drag();
       }
     }
     break;
 
   case SDL_EVENT_MOUSE_WHEEL:
-    if (app->renderer->camera != nullptr && !io.WantCaptureMouse) {
-      app->renderer->camera->update_zoom(ev->wheel.y);
+    if (!io.WantCaptureMouse) {
+      app->renderer->camera.update_zoom(ev->wheel.y);
     }
     break;
 

@@ -3,68 +3,29 @@
 #include "parallel_utils.hh"
 
 #include <iostream>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include <SDL3/SDL.h>
-
 #include <filesystem>
 #include <stdexcept>
 
-#include <vector>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <SDL3/SDL.h>
 
-GLuint Renderer::compile_shader(GLenum type, const char *path) {
-  std::ifstream file(path);
-  std::stringstream buffer;
-  buffer << file.rdbuf();
-  std::string srcStr = buffer.str();
-  const char *src = srcStr.c_str();
 
-  GLuint shader = glCreateShader(type);
-  glShaderSource(shader, 1, &src, NULL);
-  glCompileShader(shader);
-
-  // Error checking
-  GLint success;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    char info[512];
-    glGetShaderInfoLog(shader, 512, nullptr, info);
-    std::cerr << "Shader compile error: " << info << std::endl;
-  }
-
-  return shader;
-}
-
-GLuint Renderer::create_shader_program(const char *vertexPath,
-                                     const char *fragmentPath) {
-  GLuint vs = compile_shader(GL_VERTEX_SHADER, vertexPath);
-  GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fragmentPath);
-
-  GLuint program = glCreateProgram();
-  glAttachShader(program, vs);
-  glAttachShader(program, fs);
-  glLinkProgram(program);
-
-  // Error checking
-  GLint success;
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
-  if (!success) {
-    char info[512];
-    glGetProgramInfoLog(program, 512, nullptr, info);
-    std::cerr << "Shader link error: " << info << std::endl;
-  }
-
-  glDeleteShader(vs);
-  glDeleteShader(fs);
-  return program;
-}
-
-Renderer::Renderer() {
-  this->simulator = std::make_unique<ParticleMeshSimulator>();
-  this->camera = nullptr;
-
+Renderer::Renderer()
+  : simulator(std::make_unique<ParticleMeshSimulator>()),
+    camera(),
+    numbods(0),
+    numgrid(0),
+    gridlen(0.0f),
+    mass_min(0.0f),
+    mass_max(0.0f),
+    shader_program(0),
+    texture_3D(0),
+    texture_color(0),
+    VAO(0),
+    VBO(0),
+    UBO(0)
+{
   glEnable(GL_PROGRAM_POINT_SIZE);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
@@ -75,9 +36,9 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   this->numbods = NBODS;
   this->numgrid = NGRID;
   this->gridlen = GMAX;
-  this->camera = std::make_unique<Camera>(
-      glm::vec3(GMAX / 2, GMAX / 2, -1.5 * GMAX),
-      glm::vec3(GMAX / 2, GMAX / 2, GMAX / 2), glm::vec3(0.0f, 1.0f, 0.0f));
+  this->camera = Camera(glm::vec3(GMAX / 2, GMAX / 2, -1.5 * GMAX),
+                        glm::vec3(GMAX / 2, GMAX / 2, GMAX / 2),
+                        glm::vec3(0.0f, 1.0f, 0.0f));
 
   this->simulator->initialize_simulation(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
 
@@ -191,7 +152,9 @@ void Renderer::change_color(Color::ColorType color) {
                  GL_FLOAT, this->color_map.data());
 }
 
-void Renderer::display(float aspect_ratio, float mass_clip_factor) {
+void Renderer::display(float aspect_ratio, float mass_clip_factor) const {
+
+  glUseProgram(this->shader_program);
 
   // Clipping factor
   float clipped_mass_max = this->mass_max * mass_clip_factor;
@@ -199,10 +162,10 @@ void Renderer::display(float aspect_ratio, float mass_clip_factor) {
   // Update UBO data
   glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
-                  glm::value_ptr(this->camera->get_view_matrix()));
+                  glm::value_ptr(this->camera.get_view_matrix()));
   glBufferSubData(
       GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
-      glm::value_ptr(this->camera->get_projection_matrix(aspect_ratio)));
+      glm::value_ptr(this->camera.get_projection_matrix(aspect_ratio)));
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Grid parameters
@@ -234,23 +197,78 @@ void Renderer::reset_simulator() {
 }
 
 Renderer::~Renderer() {
-  if (this->VAO) {
+  if (glIsVertexArray(this->VAO)) {
     glBindVertexArray(this->VAO);
     glDisableVertexAttribArray(0);
     glDeleteVertexArrays(1, &this->VAO);
   }
-  if (this->texture_3D) {
+  if (glIsTexture(this->texture_3D)) {
     glBindTexture(GL_TEXTURE_3D, 0);
     glDeleteTextures(1, &this->texture_3D);
   }
-  if (this->texture_color) {
+  if (glIsTexture(this->texture_color)) {
     glBindTexture(GL_TEXTURE_1D, 0);
     glDeleteTextures(1, &this->texture_color);
   }
-  if (this->shader_program) {
+  if (glIsProgram(this->shader_program)) {
     glUseProgram(0);
     glDeleteProgram(this->shader_program);
   }
-  if (this->VBO) glDeleteBuffers(1, &this->VBO);
-  if (this->UBO) glDeleteBuffers(1, &this->UBO);
+  if (glIsBuffer(this->VBO)) glDeleteBuffers(1, &this->VBO);
+  if (glIsBuffer(this->UBO)) glDeleteBuffers(1, &this->UBO);
 }
+
+GLuint Renderer::compile_shader(GLenum type, const char *path) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    throw std::runtime_error("Failed to open shader file: " + std::string(path));
+  }
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  std::string srcStr = buffer.str();
+  const char *src = srcStr.c_str();
+
+  GLuint shader = glCreateShader(type);
+  glShaderSource(shader, 1, &src, NULL);
+  glCompileShader(shader);
+
+  // Error checking
+  GLint success;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    constexpr size_t LOG_SIZE = 512;
+    char info[LOG_SIZE];
+    glGetShaderInfoLog(shader, LOG_SIZE, nullptr, info);
+    std::cerr << "Shader compile error: " << info << std::endl;
+    throw std::runtime_error("");
+  }
+
+  return shader;
+}
+
+GLuint Renderer::create_shader_program(const char *vertexPath,
+                                     const char *fragmentPath) {
+  GLuint vs = compile_shader(GL_VERTEX_SHADER, vertexPath);
+  GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fragmentPath);
+
+  GLuint program = glCreateProgram();
+  glAttachShader(program, vs);
+  glAttachShader(program, fs);
+  glLinkProgram(program);
+
+  // Error checking
+  GLint success;
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success) {
+    constexpr size_t LOG_SIZE = 512;
+    char info[LOG_SIZE];
+    glGetProgramInfoLog(program, LOG_SIZE, nullptr, info);
+    std::cerr << "Shader link error: " << info << std::endl;
+    throw std::runtime_error("");
+  }
+
+  glDeleteShader(vs);
+  glDeleteShader(fs);
+  return program;
+}
+

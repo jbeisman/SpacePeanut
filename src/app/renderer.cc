@@ -151,7 +151,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   GLuint blockIndex = glGetUniformBlockIndex(this->shaderProgram, "UBO");
   glUniformBlockBinding(this->shaderProgram, blockIndex,
                         0);
-  
+
   this->grid_origin_loc = glGetUniformLocation(this->shaderProgram, "grid_origin");
   this->grid_size_loc = glGetUniformLocation(this->shaderProgram, "grid_size");
   this->density_min_loc = glGetUniformLocation(this->shaderProgram, "density_min");
@@ -239,14 +239,23 @@ void Renderer::reset_simulator() {
 }
 
 Renderer::~Renderer() {
-  glDisableVertexAttribArray(0);
-  glDeleteBuffers(1, &this->VBO);
-  glDeleteBuffers(1, &this->UBO);
-  glBindTexture(GL_TEXTURE_3D, 0);
-  glDeleteTextures(1, &this->texture3D);
-  glBindTexture(GL_TEXTURE_1D, 0);
-  glDeleteTextures(1, &this->textureColor);
-  glUseProgram(0);
-  glDeleteProgram(this->shaderProgram);
-  glDeleteVertexArrays(1, &this->VAO);
+  if (this->VAO) {
+    glBindVertexArray(this->VAO);
+    glDisableVertexAttribArray(0);
+    glDeleteVertexArrays(1, &this->VAO);
+  }
+  if (this->texture3D) {
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glDeleteTextures(1, &this->texture3D);
+  }
+  if (this->textureColor) {
+    glBindTexture(GL_TEXTURE_1D, 0);
+    glDeleteTextures(1, &this->textureColor);
+  }
+  if (this->shaderProgram) {
+    glUseProgram(0);
+    glDeleteProgram(this->shaderProgram);
+  }
+  if (this->VBO) glDeleteBuffers(1, &this->VBO);
+  if (this->UBO) glDeleteBuffers(1, &this->UBO);
 }

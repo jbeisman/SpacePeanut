@@ -23,17 +23,17 @@ public:
   std::unique_ptr<ParticleMeshSimulator> simulator;
   std::unique_ptr<Camera> camera;
 private:
-  GLuint compileShader(GLenum type, const char *path);
-  GLuint createShaderProgram(const char *vertexPath, const char *fragmentPath);
-  int NUMBODS;
-  int NUMGRID;
-  float GRIDLEN;
+  GLuint compile_shader(GLenum type, const char *path);
+  GLuint create_shader_program(const char *vertexPath, const char *fragmentPath);
+  int numbods;
+  int numgrid;
+  float gridlen;
   float mass_min;
   float mass_max;
-  std::vector<glm::vec3> colorMap;
-  GLuint shaderProgram;
-  GLuint texture3D;
-  GLuint textureColor;
+  std::vector<glm::vec3> color_map;
+  GLuint shader_program;
+  GLuint texture_3D;
+  GLuint texture_color;
   GLuint VAO;
   GLuint VBO;
   GLuint UBO;
@@ -41,6 +41,6 @@ private:
   GLuint grid_size_loc;
   GLuint density_min_loc;
   GLuint density_max_loc;
-  GLuint densityTexture_loc;
-  GLuint colorMapTexture_loc;
+  GLuint density_texture_loc;
+  GLuint color_texture_loc;
 };

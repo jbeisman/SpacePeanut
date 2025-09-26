@@ -410,12 +410,20 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     app->sim_initialized = true;
   }
 
-  // Render particles if they exist and run simulation if ready
-  if (app->sim_initialized) {
-    float aspect_ratio = static_cast<float>(w) / static_cast<float>(h);
-    app->renderer->run_and_display(aspect_ratio, COLOR,
-                                   app->change_color, CLIP_FACTOR);
+  // Change color palette if user changes
+  if (app->sim_initialized && app->change_color) {
+    app->renderer->change_color(COLOR);
     app->change_color = false;
+  }
+
+  if (app->sim_initialized) {
+
+    // Run simulation and update data buffers
+    app->renderer->update();
+
+    // Display simulation data
+    float aspect_ratio = static_cast<float>(w) / static_cast<float>(h);
+    app->renderer->display(aspect_ratio, CLIP_FACTOR);
   }
 
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

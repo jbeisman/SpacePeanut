@@ -152,6 +152,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   glUniformBlockBinding(this->shaderProgram, blockIndex,
                         0);
 
+  // Get uniform locations and store them for later
   this->grid_origin_loc = glGetUniformLocation(this->shaderProgram, "grid_origin");
   this->grid_size_loc = glGetUniformLocation(this->shaderProgram, "grid_size");
   this->density_min_loc = glGetUniformLocation(this->shaderProgram, "density_min");
@@ -161,9 +162,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
 
 }
 
-void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
-                              bool change_color, float mass_clip_factor) {
-
+void Renderer::update() {
   if (!simulator->sim_is_paused()) {
 
     // Run a timestep if ready
@@ -177,28 +176,27 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
 
     // Bind new density data to texture buffer
     glBindTexture(GL_TEXTURE_3D, this->texture3D);
-    auto *density = this->simulator->get_mass_density();
     glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, this->NUMGRID, this->NUMGRID,
-                    this->NUMGRID, GL_RED, GL_FLOAT, density);
+                    this->NUMGRID, GL_RED, GL_FLOAT,
+                    this->simulator->get_mass_density());
 
     // Bind new position data to VBO
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-    auto *vertices = this->simulator->get_positions();
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * this->NUMBODS * 3,
-                    vertices);
+                    this->simulator->get_positions());
   }
+}
 
-  // Generate new color texture
-  if (change_color) {
-    this->colorMap = getColormap(color);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB,
+void Renderer::change_color(Color::ColorType color) {
+  this->colorMap = getColormap(color);
+  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, this->colorMap.size(), 0, GL_RGB,
                  GL_FLOAT, this->colorMap.data());
-  }
+}
+
+void Renderer::display(float aspect_ratio, float mass_clip_factor) {
 
   // Clipping factor
   float clipped_mass_max = this->mass_max * mass_clip_factor;
-
-  //glUseProgram(this->shaderProgram);
 
   // Update UBO data
   glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
@@ -231,7 +229,6 @@ void Renderer::run_and_display(float aspect_ratio, Color::ColorType color,
   glDrawArrays(GL_POINTS, 0, this->NUMBODS);
   glBindVertexArray(0);
 }
-
 
 void Renderer::reset_simulator() {
   this->simulator.reset();

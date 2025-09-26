@@ -16,8 +16,9 @@ public:
   Renderer();
   ~Renderer();
   void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
-  void run_and_display(float aspect_ratio, Color::ColorType color,
-                       bool change_color, float mass_clip_factor);
+  void change_color(Color::ColorType color);
+  void update();
+  void display(float aspect_ratio, float mass_clip_factor);
   void reset_simulator();
   std::unique_ptr<ParticleMeshSimulator> simulator;
   std::unique_ptr<Camera> camera;

@@ -18,7 +18,10 @@ void main() {
 
     vec3 texCoord = (FragPos - grid_origin) / grid_size;
     float density = texture(densityTexture, texCoord).r;
-    float normalizedDensity = (density - density_min) / (density_max - density_min);
+    float logDensity = log(max(density, 0.0001));
+    float logDensityMin = log(max(density_min, 0.0001));
+    float logDensityMax = log(max(density_max, 0.0001));
+    float normalizedDensity = (logDensity - logDensityMin) / (logDensityMax - logDensityMin);
     normalizedDensity = clamp(normalizedDensity, 0.0, 1.0);
     vec3 color = texture(colorMapTexture, normalizedDensity).rgb;
     FragColor = vec4(color, 1.0);

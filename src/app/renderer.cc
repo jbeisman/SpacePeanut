@@ -19,7 +19,8 @@ Renderer::Renderer()
     gridlen(0.0f),
     mass_min(0.0f),
     mass_max(0.0f),
-    shader_program(0),
+    shader_program_log(0),
+    shader_program_lin(0),
     texture_3D(0),
     texture_color(0),
     VAO(0),
@@ -101,23 +102,32 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   // Load and compile shaders
   std::filesystem::path base_path = SDL_GetBasePath();
   std::filesystem::path vs_name = base_path / "shaders/vert.glsl";
-  std::filesystem::path fs_name = base_path / "shaders/frag.glsl";
+  std::filesystem::path fs_lin_name = base_path / "shaders/frag_linear.glsl";
+  std::filesystem::path fs_log_name = base_path / "shaders/frag_log.glsl";
 
-  this->shader_program = create_shader_program(vs_name.c_str(), fs_name.c_str());
-  glUseProgram(this->shader_program);
+  this->shader_program_lin = create_shader_program(vs_name.c_str(), fs_lin_name.c_str());
+  glUseProgram(this->shader_program_lin);
 
-  // Add uniform block to shader program
-  GLuint blockIndex = glGetUniformBlockIndex(this->shader_program, "UBO");
-  glUniformBlockBinding(this->shader_program, blockIndex,
+  // Add uniform block to linear shader program
+  GLuint blockIndexLin = glGetUniformBlockIndex(this->shader_program_lin, "UBO");
+  glUniformBlockBinding(this->shader_program_lin, blockIndexLin,
+                        0);
+
+  this->shader_program_log = create_shader_program(vs_name.c_str(), fs_log_name.c_str());
+  glUseProgram(this->shader_program_log);
+
+  // Add uniform block to log shader program
+  GLuint blockIndexLog = glGetUniformBlockIndex(this->shader_program_log, "UBO");
+  glUniformBlockBinding(this->shader_program_log, blockIndexLog,
                         0);
 
   // Get uniform locations and store them for later
-  this->grid_origin_loc = glGetUniformLocation(this->shader_program, "grid_origin");
-  this->grid_size_loc = glGetUniformLocation(this->shader_program, "grid_size");
-  this->density_min_loc = glGetUniformLocation(this->shader_program, "density_min");
-  this->density_max_loc = glGetUniformLocation(this->shader_program, "density_max");
-  this->density_texture_loc = glGetUniformLocation(this->shader_program, "densityTexture");
-  this->color_texture_loc = glGetUniformLocation(this->shader_program, "colorMapTexture");
+  this->grid_origin_loc = glGetUniformLocation(this->shader_program_log, "grid_origin");
+  this->grid_size_loc = glGetUniformLocation(this->shader_program_log, "grid_size");
+  this->density_min_loc = glGetUniformLocation(this->shader_program_log, "density_min");
+  this->density_max_loc = glGetUniformLocation(this->shader_program_log, "density_max");
+  this->density_texture_loc = glGetUniformLocation(this->shader_program_log, "densityTexture");
+  this->color_texture_loc = glGetUniformLocation(this->shader_program_log, "colorMapTexture");
 
 }
 
@@ -152,9 +162,13 @@ void Renderer::change_color(Color::ColorType color) {
                  GL_FLOAT, this->color_map.data());
 }
 
-void Renderer::display(float aspect_ratio, float mass_clip_factor) const {
+void Renderer::display(float aspect_ratio, float mass_clip_factor, bool log_scale) const {
 
-  glUseProgram(this->shader_program);
+  if (log_scale) {
+    glUseProgram(this->shader_program_log);
+  } else {
+    glUseProgram(this->shader_program_lin);
+  }
 
   // Clipping factor
   float clipped_mass_max = this->mass_max * mass_clip_factor;
@@ -210,9 +224,13 @@ Renderer::~Renderer() {
     glBindTexture(GL_TEXTURE_1D, 0);
     glDeleteTextures(1, &this->texture_color);
   }
-  if (glIsProgram(this->shader_program)) {
+  if (glIsProgram(this->shader_program_lin)) {
     glUseProgram(0);
-    glDeleteProgram(this->shader_program);
+    glDeleteProgram(this->shader_program_lin);
+  }
+  if (glIsProgram(this->shader_program_log)) {
+    glUseProgram(0);
+    glDeleteProgram(this->shader_program_log);
   }
   if (glIsBuffer(this->VBO)) glDeleteBuffers(1, &this->VBO);
   if (glIsBuffer(this->UBO)) glDeleteBuffers(1, &this->UBO);

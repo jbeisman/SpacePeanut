@@ -253,7 +253,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
   static float RSHIFT = 50.0;
   static int NSTEPS = 1000;
   static Color::ColorType COLOR;
-  static float CLIP_FACTOR = 1.0f;;
+  static float CLIP_FACTOR = 1.0f;
+  static bool LOG_SCALE = true;
   {
     ImGui::Begin("INPUTS");
 
@@ -336,6 +337,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
       sdl_quit.type = SDL_EVENT_QUIT;
       SDL_PushEvent(&sdl_quit);
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox("Log scale", &LOG_SCALE);
 
     ImGui::ColorEdit3("Clear color", (float*)&app->clear_color);
 
@@ -423,7 +427,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     // Display simulation data
     float aspect_ratio = static_cast<float>(w) / static_cast<float>(h);
-    app->renderer->display(aspect_ratio, CLIP_FACTOR);
+    app->renderer->display(aspect_ratio, CLIP_FACTOR, LOG_SCALE);
   }
 
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

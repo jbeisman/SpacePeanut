@@ -18,7 +18,7 @@ public:
   void init(float RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
   void change_color(Color::ColorType color);
   void update();
-  void display(float aspect_ratio, float mass_clip_factor) const;
+  void display(float aspect_ratio, float mass_clip_factor, bool log_scale) const;
   void reset_simulator();
   std::unique_ptr<ParticleMeshSimulator> simulator;
   Camera camera;
@@ -31,7 +31,8 @@ private:
   float mass_min;
   float mass_max;
   std::vector<glm::vec3> color_map;
-  GLuint shader_program;
+  GLuint shader_program_log;
+  GLuint shader_program_lin;
   GLuint texture_3D;
   GLuint texture_color;
   GLuint VAO;

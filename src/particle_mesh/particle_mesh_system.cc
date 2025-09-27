@@ -12,10 +12,6 @@ ParticleMeshSystem::ParticleMeshSystem(const int nbods, const int ngrid,
   ParticleMeshSystem::setup_system(nbods, ngrid, gridlength);
 }
 
-ParticleMeshSystem::~ParticleMeshSystem() {
-  fft_util::destroy_plans(fft_plans.get());
-}
-
 void ParticleMeshSystem::setup_system(const int nbods, const int ngrid,
                                       const float gridlength) {
   grid = std::make_unique<GridConst>(ngrid, gridlength);
@@ -25,18 +21,15 @@ void ParticleMeshSystem::setup_system(const int nbods, const int ngrid,
   gAcc = std::vector<std::array<float, 3>>(ngrid * ngrid * ngrid);
   gPot = std::vector<float, fftwf_allocator<float>>(ngrid * ngrid * ngrid);
   gMass = std::vector<float, fftwf_allocator<float>>(ngrid * ngrid * ngrid);
-  fMass = std::vector<fftwf_complex, fftwf_allocator<fftwf_complex>>(
-      ngrid * ngrid * (ngrid / 2 + 1));
-  fft_i =
-      std::vector<std::array<short int, 3>>(ngrid * ngrid * (ngrid / 2 + 1));
+  fMass = std::vector<fftwf_complex, fftwf_allocator<fftwf_complex>>(ngrid * ngrid * (ngrid / 2 + 1));
+  fft_i = std::vector<std::array<short int, 3>>(ngrid * ngrid * (ngrid / 2 + 1));
   grid_i = std::vector<std::array<short int, 3>>(ngrid * ngrid * ngrid);
 }
 
 void ParticleMeshSystem::initialize_system(const float vmin, const float vmax,
                                            const float time_scale) {
   // Set plans for FFTW3 foward and backward 3D DFTs
-  fft_plans = fft_util::create_plans(grid->NGRID, gMass.data(), gPot.data(),
-                                     fMass.data());
+  fft_plans = fft_util::create_plans(grid->NGRID, gMass.data(), gPot.data(), fMass.data());
 
   // Initialize grid utilities
   GridCIC::set_grid(grid->NGRID, grid->GMAX);
@@ -100,8 +93,7 @@ void ParticleMeshSystem::integrate_timestep(const float dt, float time) {
   enforce_periodic_boundary_conditions(grid->GMAX, pPos);
   timer.end("enforce_periodic_boundary_conditions");
 
-  // Calculate particle accelerations at time t + dt using positions at time t +
-  // dt
+  // Calculate particle accelerations at time t + dt using positions at time t + dt
   timer.start("get_acceleration");
   get_acceleration(time_scale);
   timer.end("get_acceleration");

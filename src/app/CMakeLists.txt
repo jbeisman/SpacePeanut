@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
-add_executable(spacepeanut app.cc camera.cc renderer.cc color_palette.cc)
+add_executable(spacepeanut app.cc app_state.cc render_ui.cc camera.cc renderer.cc color_palette.cc)
 target_link_libraries(spacepeanut PRIVATE SDL3::SDL3 GLEW OpenGL imgui simulator)
 
 install(TARGETS spacepeanut)

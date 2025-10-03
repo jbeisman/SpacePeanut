@@ -50,21 +50,14 @@ public:
                              const float gridlength);
   void advance_single_timestep();
   void advance_simulation();
-  void sim_change_pause_state(bool p);
-  bool sim_is_paused();
   void sim_change_dt(float new_dt);
   void sim_set_delay(int new_delay);
-  void sim_set_write_output(bool write_output);
-  std::array<float, 3> *get_positions();
-  float *get_mass_density();
-  std::vector<float, fftwf_allocator<float>> &get_mass_density_ref();
+  std::array<float, 3>* get_positions();
+  float* get_mass_density();
+  std::vector<float, fftwf_allocator<float>>& get_mass_density_ref();
 
 private:
   std::unique_ptr<CosmicTime> space_time;
   std::unique_ptr<ParticleMeshSystem> pm_system;
-  int filenum{0};
-  int delay_ms{0};
-  bool PAUSED{true};
-  bool WRITE_OUTPUT{true};
 };
 

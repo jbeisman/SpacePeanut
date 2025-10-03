@@ -15,7 +15,13 @@ void fft_util::init_fftw3f() {
   fftwf_plan_with_nthreads(get_max_threads());
 }
 
-void fft_util::cleanup_fftw3f() { fftwf_cleanup_threads(); }
+void fft_util::cleanup_fftw3f() {
+  // fftwf_init_threads must be called before fftwf_cleanup_threads
+  // fftwf_init_threads can be called multiple times without error
+  // call it now to prevent memory errors if application terminates before simulator initialization
+  fftwf_init_threads();
+  fftwf_cleanup_threads();
+}
 
 std::unique_ptr<fft_util::Plans>
 fft_util::create_plans(const int NGRID, float *mass, float *potential,

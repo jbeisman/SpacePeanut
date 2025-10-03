@@ -132,9 +132,8 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
 }
 
 void Renderer::update() {
-  if (!simulator->sim_is_paused()) {
 
-    // Run a timestep if ready
+    // Run a timestep
     this->simulator->advance_single_timestep();
 
     // Get density min and max
@@ -153,7 +152,6 @@ void Renderer::update() {
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * this->numbods * 3,
                     this->simulator->get_positions());
-  }
 }
 
 void Renderer::change_color(Color::ColorType color) {

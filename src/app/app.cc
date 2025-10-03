@@ -4,54 +4,7 @@
 #define GL_GLEXT_PROTOTYPES 1
 #define GL3_PROTOTYPES 1
 
-#include <GL/glew.h>
-#include <glm/glm.hpp>
-
-#include "imgui.h"
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_sdl3.h"
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
-#include <stdio.h>
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <SDL3/SDL_opengles2.h>
-#else
-#include <SDL3/SDL_opengl.h>
-#endif
-
-#include <fstream>
-#include <iostream>
-#include <memory>
-
-#ifdef __EMSCRIPTEN__
-#include "../libs/emscripten/emscripten_mainloop_stub.h"
-#endif
-
-#include "camera.hh"
-#include "renderer.hh"
-#include "simulator.hh"
-
-class AppState {
-public:
-  AppState();
-  ~AppState() = default;
-  SDL_Window *window_ptr;
-  SDL_GLContext context_ptr;
-  ImVec4 clear_color{ImVec4(0.45f, 0.55f, 0.60f, 1.00f)};
-  bool app_finished{false};
-  bool sim_initialized{false};
-  bool execute_sim_init{false};
-  bool pause_state{true};
-  bool mouse_dragging{false};
-  bool change_color{true};
-  std::unique_ptr<Renderer> renderer;
-};
-
-AppState::AppState() {
-  renderer = std::make_unique<Renderer>();
-  renderer->simulator->sim_change_pause_state(true);
-  renderer->simulator->sim_set_write_output(false);
-}
+#include "app.hh"
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   *appstate = new AppState;
@@ -108,12 +61,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   app->context_ptr = SDL_GL_CreateContext(app->window_ptr);
 
   if (app->window_ptr == nullptr) {
-    printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
+    SDL_Log("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
     return SDL_APP_FAILURE;
   }
 
   if (app->context_ptr == nullptr) {
-    printf("Error: SDL_GL_CreateContext(): %s\n", SDL_GetError());
+    SDL_Log("Error: SDL_GL_CreateContext(): %s\n", SDL_GetError());
     return SDL_APP_FAILURE;
   }
 
@@ -155,10 +108,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   // Initialize OpenGL extensions
   glewInit();
 
-  return SDL_APP_CONTINUE; /* carry on with the program! */
+  return SDL_APP_CONTINUE;
 }
 
-/* This function runs when a new event (mouse input, keypresses, etc) occurs. */
+// This function runs when a new event (mouse input, keypresses, etc) occurs.
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
   auto *app = static_cast<AppState *>(appstate);
 
@@ -171,13 +124,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
        ev->window.windowID == SDL_GetWindowID(app->window_ptr)) ||
       (ev->type == SDL_EVENT_QUIT)) {
 
-    // Sim seg faults if forced to quit before initialization
-    if (!app->sim_initialized) {
-      app->renderer->simulator->initialize_simulation(1.0f, 1, 1, 1, 1.0f);
-    }
-
     // Stop and exit
-    app->app_finished = true;
     return SDL_APP_SUCCESS;
   }
 
@@ -191,8 +138,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
       app->mouse_dragging = true;
 
       if (!io.WantCaptureMouse) {
-        app->renderer->camera.start_drag(
-            glm::vec2(ev->button.x, ev->button.y));
+        app->dragStart(glm::vec2(ev->button.x, ev->button.y));
       }
     }
     break;
@@ -203,9 +149,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
       if (!io.WantCaptureMouse) {
         int w, h;
         SDL_GetWindowSizeInPixels(app->window_ptr, &w, &h);
-        app->renderer->camera.update_drag(
-            glm::vec2(ev->motion.x, ev->motion.y),
-            glm::vec2(w, h));
+        app->dragUpdate(glm::vec2(ev->motion.x, ev->motion.y), glm::vec2(w, h));
       }
     }
     break;
@@ -215,21 +159,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *ev) {
       app->mouse_dragging = false;
 
       if (!io.WantCaptureMouse) {
-        app->renderer->camera.end_drag();
+        app->dragEnd();
       }
     }
     break;
 
   case SDL_EVENT_MOUSE_WHEEL:
     if (!io.WantCaptureMouse) {
-      app->renderer->camera.update_zoom(ev->wheel.y);
+      app->zoomUpdate(ev->wheel.y);
     }
     break;
 
   }
 
 
-  return SDL_APP_CONTINUE; /* carry on with the program! */
+  return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
@@ -244,164 +188,17 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 
-  ImGuiIO &io = ImGui::GetIO();
-
-  // Get input from user
-  static int NGRID = 64;
-  static int NBODS = 2097152;
-  static float GMAX = 128.0;
-  static float RSHIFT = 50.0;
-  static int NSTEPS = 1000;
-  static Color::ColorType COLOR;
-  static float CLIP_FACTOR = 1.0f;
-  static bool LOG_SCALE = true;
-  {
-    ImGui::Begin("INPUTS");
-
-    static int NGRID_selector = 1;
-    const char *ngriditems[] = {"32", "64", "128", "256", "512"};
-    const char *ngrid_label = ngriditems[NGRID_selector];
-
-    // 2. Create the combo box. The outer `if` block is for the dropdown menu
-    // itself.
-    if (ImGui::BeginCombo("Grid resolution", ngrid_label)) {
-      // 3. Loop through all possible items.
-      for (int i = 0; i < IM_ARRAYSIZE(ngriditems); ++i) {
-        const bool is_selected = (NGRID_selector == i);
-
-        // 4. Create a selectable item inside the combo.
-        //    - `ImGui::Selectable()` returns true ONLY on the frame a new
-        //    selection is made.
-        if (ImGui::Selectable(ngriditems[i], is_selected)) {
-          // 5. Place your logic inside this block.
-          //    This code runs ONLY when the user clicks on a new item.
-          NGRID_selector = i;
-          if (NGRID_selector == 0)
-            NGRID = 32;
-          else if (NGRID_selector == 1)
-            NGRID = 64;
-          else if (NGRID_selector == 2)
-            NGRID = 128;
-          else if (NGRID_selector == 3)
-            NGRID = 256;
-          else if (NGRID_selector == 4)
-            NGRID = 512;
-        }
-        if (is_selected) {
-          ImGui::SetItemDefaultFocus();
-        }
-      }
-      ImGui::EndCombo();
-    }
-
-    ImGui::InputInt("Number of particles", &NBODS);
-    ImGui::InputFloat("Grid length", &GMAX);
-    ImGui::InputFloat("Redshift value", &RSHIFT);
-    ImGui::InputInt("Number of timesteps", &NSTEPS);
-
-    ImGui::SeparatorText("CONTROLS");
-    if (ImGui::Button("INITIALIZE")) {
-      app->execute_sim_init = true;
-    }
-    ImGui::SameLine();
-
-    if (ImGui::Button("RUN")) {
-      app->pause_state = false;
-      app->renderer->simulator->sim_change_pause_state(app->pause_state);
-      app->execute_sim_init = true;
-    }
-    ImGui::SameLine();
-
-    if (ImGui::Button("PAUSE")) {
-      app->pause_state = true;
-      app->renderer->simulator->sim_change_pause_state(app->pause_state);
-    }
-    ImGui::SameLine();
-
-    if (ImGui::Button("RESET")) {
-      if (app->sim_initialized) {
-        app->pause_state = true;
-        app->execute_sim_init = false;
-        app->sim_initialized = false;
-        app->change_color = true;
-        app->renderer->reset_simulator();
-        app->renderer->simulator->sim_change_pause_state(app->pause_state);
-        app->renderer->simulator->sim_set_write_output(false);
-      }
-    }
-    ImGui::SameLine();
-
-    if (ImGui::Button("QUIT")) {
-      // Stop and exit
-      SDL_Event sdl_quit;
-      sdl_quit.type = SDL_EVENT_QUIT;
-      SDL_PushEvent(&sdl_quit);
-    }
-    ImGui::SameLine();
-
-    ImGui::Checkbox("Log scale", &LOG_SCALE);
-
-    ImGui::ColorEdit3("Clear color", (float*)&app->clear_color);
-
-    static int COLOR_selector = 0;
-    const char *coloritems[] = {"Magma", "BlueOrange", "Viridis", "Plasma",
-                                "Rainbow"};
-    const char *color_label = coloritems[COLOR_selector];
-
-    // 2. Create the combo box. The outer `if` block is for the dropdown menu
-    // itself.
-    if (ImGui::BeginCombo("Color palette", color_label)) {
-      // 3. Loop through all possible items.
-      for (int i = 0; i < IM_ARRAYSIZE(coloritems); ++i) {
-        const bool is_selected = (COLOR_selector == i);
-
-        // 4. Create a selectable item inside the combo.
-        //    - `ImGui::Selectable()` returns true ONLY on the frame a new
-        //    selection is made.
-        if (ImGui::Selectable(coloritems[i], is_selected)) {
-          // 5. Place your logic inside this block.
-          //    This code runs ONLY when the user clicks on a new item.
-          COLOR_selector = i;
-          if (COLOR_selector == 0)
-            COLOR = Color::ColorType::Magma;
-          else if (COLOR_selector == 1)
-            COLOR = Color::ColorType::BlueOrange;
-          else if (COLOR_selector == 2)
-            COLOR = Color::ColorType::Viridis;
-          else if (COLOR_selector == 3)
-            COLOR = Color::ColorType::Plasma;
-          else if (COLOR_selector == 4)
-            COLOR = Color::ColorType::Rainbow;
-
-          app->change_color = true;
-        }
-
-        // Optional: Set the item to be the default focused one for keyboard
-        // navigation.
-        if (is_selected) {
-          ImGui::SetItemDefaultFocus();
-        }
-      }
-      ImGui::EndCombo();
-    }
-
-
-    ImGui::SliderFloat("Clip factor", &CLIP_FACTOR, 0.000001f, 1.0f, "Value: %.6f", ImGuiSliderFlags_Logarithmic);
-
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                1000.0f / io.Framerate, io.Framerate);
-
-    ImGui::End();
-  }
-
+  // Draw user inputs and controls
+  renderUI(app);
 
   // Rendering
   ImGui::Render();
 
   int w, h;
   SDL_GetWindowSizeInPixels(app->window_ptr, &w, &h);
-  glViewport(0, 0, w, h);
+  float aspect_ratio = static_cast<float>(w) / static_cast<float>(h);
 
+  glViewport(0, 0, w, h);
   glClearColor( app->clear_color.x * app->clear_color.w,
                 app->clear_color.y * app->clear_color.w,
                 app->clear_color.z * app->clear_color.w,
@@ -410,30 +207,27 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
   // Initialize renderer, simulation, camera
   if (app->execute_sim_init && !app->sim_initialized) {
-    app->renderer->init(RSHIFT, NSTEPS, NBODS, NGRID, GMAX);
-    app->sim_initialized = true;
+    app->initializeSimulation();
   }
 
   // Change color palette if user changes
-  if (app->sim_initialized && app->change_color) {
-    app->renderer->change_color(COLOR);
-    app->change_color = false;
+  if (app->sim_initialized && app->change_color_palette) {
+    app->changeColors();
   }
 
   if (app->sim_initialized) {
 
     // Run simulation and update data buffers
-    app->renderer->update();
+    app->updateSimulation();
 
     // Display simulation data
-    float aspect_ratio = static_cast<float>(w) / static_cast<float>(h);
-    app->renderer->display(aspect_ratio, CLIP_FACTOR, LOG_SCALE);
+    app->displaySimulation(aspect_ratio);
   }
 
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
   SDL_GL_SwapWindow(app->window_ptr);
 
-  return SDL_APP_CONTINUE; /* carry on with the program! */
+  return SDL_APP_CONTINUE;
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {

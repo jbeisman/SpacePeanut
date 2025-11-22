@@ -7,11 +7,13 @@ AppState::AppState() {
 
 void AppState::initializeSimulation() {
 	this->renderer->init(this->rshift, this->nsteps, this->nbods, this->ngrid, this->gmax);
-  this->sim_initialized = true;
+	this->sim_initialized = true;
+	this->current_redshift = this->renderer->current_redshift;
 }
 
 void AppState::updateSimulation() {
 	if (this->pause_state == false) this->renderer->update();
+	this->current_redshift = this->renderer->current_redshift;
 }
 
 void AppState::displaySimulation(float aspect_ratio) {
@@ -28,7 +30,7 @@ void AppState::resetSimulation() {
 
 void AppState::changeColors() {
 	this->renderer->change_color(this->color);
-  this->change_color_palette = false;
+	this->change_color_palette = false;
 }
 void AppState::dragStart(const glm::vec2 &mouse_pos) {
 	this->renderer->camera.start_drag(mouse_pos);

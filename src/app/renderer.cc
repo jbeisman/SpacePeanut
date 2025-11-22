@@ -19,6 +19,7 @@ Renderer::Renderer()
     gridlen(0.0f),
     mass_min(0.0f),
     mass_max(0.0f),
+    current_redshift(0.0),
     shader_program_log(0),
     shader_program_lin(0),
     texture_3D(0),
@@ -32,11 +33,12 @@ Renderer::Renderer()
   glDepthFunc(GL_LESS);
 }
 
-void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
+void Renderer::init(double RSHIFT, int NSTEPS, int NBODS, int NGRID,
                     float GMAX) {
   this->numbods = NBODS;
   this->numgrid = NGRID;
   this->gridlen = GMAX;
+  this->current_redshift = RSHIFT;
   this->camera = Camera(glm::vec3(GMAX / 2, GMAX / 2, -1.5 * GMAX),
                         glm::vec3(GMAX / 2, GMAX / 2, GMAX / 2),
                         glm::vec3(0.0f, 1.0f, 0.0f));
@@ -62,7 +64,7 @@ void Renderer::init(float RSHIFT, int NSTEPS, int NBODS, int NGRID,
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * NBODS * 3,
     this->simulator->get_positions(), GL_DYNAMIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
-                        (void *)0);
+                        nullptr);
 
   // Generate texture for mass density
   glGenTextures(1, &this->texture_3D);
@@ -135,6 +137,9 @@ void Renderer::update() {
 
     // Run a timestep
     this->simulator->advance_single_timestep();
+
+    // Get redshift at current time
+    this->current_redshift = this->simulator->get_redshift();
 
     // Get density min and max
     auto [mass_minimum, mass_maximum] =

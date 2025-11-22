@@ -23,7 +23,7 @@ void renderUI(AppState* app) {
 
     ImGui::InputInt("Number of particles", &app->nbods);
     ImGui::InputFloat("Grid length", &app->gmax);
-    ImGui::InputFloat("Redshift value", &app->rshift);
+    ImGui::InputDouble("Redshift value", &app->rshift);
     ImGui::InputInt("Number of timesteps", &app->nsteps);
 
     ImGui::SeparatorText("CONTROLS");
@@ -67,6 +67,8 @@ void renderUI(AppState* app) {
     }
 
     ImGui::SliderFloat("Clip factor", &app->clip_factor, 0.000001f, 1.0f, "Value: %.6f", ImGuiSliderFlags_Logarithmic);
+
+    ImGui::Text("Current redshift value %.6lf", app->current_redshift);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / io.Framerate, io.Framerate);

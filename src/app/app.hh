@@ -44,7 +44,7 @@ public:
   int ngrid{64};
   int nbods{2097152};
   float gmax{128.0f};
-  float rshift{50.0f};
+  double rshift{50.0};
   int nsteps{1000};
 
   SDL_Window *window_ptr;
@@ -66,6 +66,9 @@ public:
   // Imgui combo box selectors
   int ngrid_selector{1};
   int color_selector{0};
+
+  // Simulation redshift for output display
+  double current_redshift{0.0};
 
 private:
 	// Renderer - includes simulator, camera, and all simulation state

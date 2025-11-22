@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 set(SIM_CC_FILES
 	get_input.cc
 	simulator.cc
+	space_time.cc
 )
 
 # List of public header files

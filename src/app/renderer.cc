@@ -133,10 +133,10 @@ void Renderer::init(double RSHIFT, int NSTEPS, int NBODS, int NGRID,
 
 }
 
-void Renderer::update() {
+void Renderer::update(float evolution_speed, bool reverse_time) {
 
     // Run a timestep
-    this->simulator->advance_single_timestep();
+    this->simulator->advance_single_timestep(evolution_speed, reverse_time);
 
     // Get redshift at current time
     this->current_redshift = this->simulator->get_redshift();

@@ -70,10 +70,10 @@ void ParticleMeshSystem::initialize_system(const float vmin, const float vmax,
   mult_vec3(pVel, time_scale2);
 }
 
-void ParticleMeshSystem::integrate_timestep(const float dt, float time) {
+void ParticleMeshSystem::integrate_timestep(const float dt, float time, float speed) {
   const float half_dt = dt / 2;
   float time_scale = exp(time);
-  float const_factor = half_dt / compute_H(time_scale);
+  float const_factor = speed * half_dt / compute_H(time_scale);
 
   // Update velocity to time t + dt/2 using time t acceleration
   timer.start("update_particle_velocity");
@@ -99,7 +99,7 @@ void ParticleMeshSystem::integrate_timestep(const float dt, float time) {
   timer.end("get_acceleration");
 
   // Update velocity to time t + dt using time t + dt acceleration
-  const_factor = half_dt / compute_H(time_scale);
+  const_factor = speed * half_dt / compute_H(time_scale);
   timer.start("update_particle_velocity");
   update_particle(const_factor, pAcc, pVel);
   timer.end("update_particle_velocity");

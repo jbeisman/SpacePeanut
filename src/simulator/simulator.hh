@@ -13,7 +13,7 @@ public:
   void initialize_simulation(const double redshift, const int ntimesteps,
                              const int nbods, const int ngrid,
                              const float gridlength);
-  void advance_single_timestep();
+  void advance_single_timestep(float evolution_speed, bool reverse_time);
   std::array<float, 3>* get_positions();
   float* get_mass_density();
   std::vector<float, fftwf_allocator<float>>& get_mass_density_ref();

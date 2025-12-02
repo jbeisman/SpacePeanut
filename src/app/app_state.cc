@@ -12,8 +12,10 @@ void AppState::initializeSimulation() {
 }
 
 void AppState::updateSimulation() {
-	if (this->pause_state == false) this->renderer->update();
-	this->current_redshift = this->renderer->current_redshift;
+	if (this->pause_state == false) {
+		this->renderer->update(this->evolution_speed, this->reverse_time);
+		this->current_redshift = this->renderer->current_redshift;
+	}
 }
 
 void AppState::displaySimulation(float aspect_ratio) {

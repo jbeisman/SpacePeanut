@@ -56,7 +56,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   SDL_WindowFlags window_flags =
       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-  app->window_ptr = SDL_CreateWindow("ImGui+SDL3+OpenGL3", 1280,
+  app->window_ptr = SDL_CreateWindow("SpacePeanut", 1280,
                                      800, window_flags);
   app->context_ptr = SDL_GL_CreateContext(app->window_ptr);
 

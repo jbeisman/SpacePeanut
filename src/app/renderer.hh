@@ -17,7 +17,7 @@ public:
   ~Renderer();
   void init(double RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
   void change_color(Color::ColorType color);
-  void update();
+  void update(float evolution_speed, bool reverse_time);
   void display(float aspect_ratio, float mass_clip_factor, bool log_scale) const;
   void reset_simulator();
   Camera camera;

@@ -15,7 +15,7 @@ public:
   void setup_system(const int nbods, const int ngrid, const float gridlength);
   void initialize_system(const float vmin, const float vmax,
                          const float time_scale);
-  void integrate_timestep(const float dt, float time);
+  void integrate_timestep(const float dt, float time, float speed=1.0f);
 
   TimeLogger timer;                                 // timer to log performance data
   std::vector<std::array<float, 3>> pPos;           // particle positions

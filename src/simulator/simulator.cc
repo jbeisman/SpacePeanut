@@ -26,16 +26,35 @@ void ParticleMeshSimulator::initialize_simulation(const double redshift,
       this->space_time.get_time_scale()); // TODO - better initialization system and user options
 }
 
-void ParticleMeshSimulator::advance_single_timestep() {
+void ParticleMeshSimulator::advance_single_timestep(float evolution_speed, bool reverse_time) {
 
-  double dt = space_time.get_dt();
-  this->pm_system->integrate_timestep(static_cast<float>(dt), static_cast<float>(space_time.get_time_current()));
-  this->space_time.update_time(dt);
+  double dt = this->space_time.get_dt();
+  double time_current = this->space_time.get_time_current();
+  double time_start = this->space_time.get_time_start();
+  double time_end = this->space_time.get_time_end();
+  bool run_step = true;
 
-  if (this->space_time.get_time_current() >= this->space_time.get_time_end() ||
-      this->space_time.get_time_current() <= this->space_time.get_time_start())
+  // Modify dt to prevent overshooting time boundaries
+  if (time_current + dt < time_start) { dt = time_start - time_current; }
+  if (time_current + dt > time_end) { dt = time_end - time_current; }
+
+  // Simulation has reached end of timeseries if dt is 0.0
+  // Reverse time direction or defer execution.
+  if (std::fabs(dt) < std::numeric_limits<double>::epsilon())
   {
-    this->space_time.update_dt(-1.0 * dt);
+    if (reverse_time) {
+      dt = -1.0 * this->space_time.get_dt();
+      this->space_time.update_dt(dt);
+    }
+    else {
+      run_step = false;
+    }
+  }
+
+  if (run_step)
+  {
+    this->pm_system->integrate_timestep(static_cast<float>(dt), static_cast<float>(space_time.get_time_current()), evolution_speed);
+    this->space_time.update_time(dt);
   }
 }
 

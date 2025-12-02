@@ -51,12 +51,14 @@ public:
   SDL_GLContext context_ptr;
   ImVec4 clear_color{ImVec4(0.45f, 0.55f, 0.60f, 1.00f)};
 
-  // Program control booleans
+  // Program controls
   bool sim_initialized{false};
   bool execute_sim_init{false};
   bool pause_state{true};
   bool mouse_dragging{false};
   bool change_color_palette{true};
+  bool reverse_time{false};
+  float evolution_speed{1.0f};
 
   // Display controls
   Color::ColorType color{Color::ColorType::Magma};

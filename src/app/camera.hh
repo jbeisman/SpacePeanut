@@ -21,11 +21,12 @@ public:
   glm::vec3 get_LookAt() const;
   glm::vec3 get_view_direction() const;
   glm::vec3 get_right_vec() const;
+  glm::mat4x4 get_rotation_matrix() const;
 private:
   glm::mat4x4 view_matrix;
   glm::vec3 cam_pos;
-  glm::vec3 up_vector;
   glm::vec3 look_at;
+  glm::vec3 up_vector;
   glm::vec2 prev_mouse_pos;
   bool is_drag{false};
   float zoom_sensitivity{1.0f};

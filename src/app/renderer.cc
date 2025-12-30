@@ -6,29 +6,32 @@
 #include <filesystem>
 #include <stdexcept>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <SDL3/SDL.h>
 
 
 Renderer::Renderer()
-  : simulator(std::make_unique<ParticleMeshSimulator>()),
-    camera(),
+  : camera(),
+    current_redshift(0.0),
+    simulator(std::make_unique<ParticleMeshSimulator>()),
     numbods(0),
     numgrid(0),
     gridlen(0.0f),
     mass_min(0.0f),
     mass_max(0.0f),
-    current_redshift(0.0),
     shader_program_log(0),
     shader_program_lin(0),
+    shader_program_triad(0),
     texture_3D(0),
     texture_color(0),
     VAO(0),
     VBO(0),
-    UBO(0)
+    UBO(0),
+    triad_VAO(0),
+    triad_VBO(0)
 {
   glEnable(GL_PROGRAM_POINT_SIZE);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
 }
@@ -39,7 +42,7 @@ void Renderer::init(double RSHIFT, int NSTEPS, int NBODS, int NGRID,
   this->numgrid = NGRID;
   this->gridlen = GMAX;
   this->current_redshift = RSHIFT;
-  this->camera = Camera(glm::vec3(GMAX / 2, GMAX / 2, -1.5 * GMAX),
+  this->camera = Camera(glm::vec3(1.1f * GMAX, GMAX, -1.5f * GMAX),
                         glm::vec3(GMAX / 2, GMAX / 2, GMAX / 2),
                         glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -101,26 +104,35 @@ void Renderer::init(double RSHIFT, int NSTEPS, int NBODS, int NGRID,
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
+  this->generate_triad(GMAX);
+
   // Load and compile shaders
   std::filesystem::path base_path = SDL_GetBasePath();
   std::filesystem::path vs_name = base_path / "shaders/vert.glsl";
   std::filesystem::path fs_lin_name = base_path / "shaders/frag_linear.glsl";
   std::filesystem::path fs_log_name = base_path / "shaders/frag_log.glsl";
+  std::filesystem::path vs_triad_name = base_path / "shaders/vert_triad.glsl";
+  std::filesystem::path fs_triad_name = base_path / "shaders/frag_triad.glsl";
 
-  this->shader_program_lin = create_shader_program(vs_name.c_str(), fs_lin_name.c_str());
+  this->shader_program_lin =
+    this->create_shader_program(vs_name.c_str(), fs_lin_name.c_str());
   glUseProgram(this->shader_program_lin);
-
-  // Add uniform block to linear shader program
   GLuint blockIndexLin = glGetUniformBlockIndex(this->shader_program_lin, "UBO");
   glUniformBlockBinding(this->shader_program_lin, blockIndexLin,
                         0);
 
-  this->shader_program_log = create_shader_program(vs_name.c_str(), fs_log_name.c_str());
+  this->shader_program_log =
+    this->create_shader_program(vs_name.c_str(), fs_log_name.c_str());
   glUseProgram(this->shader_program_log);
-
-  // Add uniform block to log shader program
   GLuint blockIndexLog = glGetUniformBlockIndex(this->shader_program_log, "UBO");
   glUniformBlockBinding(this->shader_program_log, blockIndexLog,
+                        0);
+
+  this->shader_program_triad =
+    this->create_shader_program(vs_triad_name.c_str(), fs_triad_name.c_str());
+  glUseProgram(this->shader_program_triad);
+  GLuint blockIndexTriad = glGetUniformBlockIndex(this->shader_program_triad, "UBO");
+  glUniformBlockBinding(this->shader_program_triad, blockIndexTriad,
                         0);
 
   // Get uniform locations and store them for later
@@ -165,7 +177,7 @@ void Renderer::change_color(Color::ColorType color) {
                  GL_FLOAT, this->color_map.data());
 }
 
-void Renderer::display(float aspect_ratio, float mass_clip_factor, bool log_scale) const {
+void Renderer::display(float aspect_ratio, float mass_clip_factor, bool log_scale) {
 
   if (log_scale) {
     glUseProgram(this->shader_program_log);
@@ -179,10 +191,9 @@ void Renderer::display(float aspect_ratio, float mass_clip_factor, bool log_scal
   // Update UBO data
   glBindBuffer(GL_UNIFORM_BUFFER, this->UBO);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
-                  glm::value_ptr(this->camera.get_view_matrix()));
-  glBufferSubData(
-      GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
-      glm::value_ptr(this->camera.get_projection_matrix(aspect_ratio)));
+    glm::value_ptr(this->camera.get_view_matrix()));
+  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
+    glm::value_ptr(this->camera.get_projection_matrix(aspect_ratio)));
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Grid parameters
@@ -206,6 +217,8 @@ void Renderer::display(float aspect_ratio, float mass_clip_factor, bool log_scal
   glBindVertexArray(this->VAO);
   glDrawArrays(GL_POINTS, 0, this->numbods);
   glBindVertexArray(0);
+
+  this->display_triad();
 }
 
 void Renderer::reset_simulator() {
@@ -218,6 +231,11 @@ Renderer::~Renderer() {
     glBindVertexArray(this->VAO);
     glDisableVertexAttribArray(0);
     glDeleteVertexArrays(1, &this->VAO);
+  }
+  if (glIsVertexArray(this->triad_VAO)) {
+    glBindVertexArray(this->triad_VAO);
+    glDisableVertexAttribArray(0);
+    glDeleteVertexArrays(1, &this->triad_VAO);
   }
   if (glIsTexture(this->texture_3D)) {
     glBindTexture(GL_TEXTURE_3D, 0);
@@ -235,8 +253,13 @@ Renderer::~Renderer() {
     glUseProgram(0);
     glDeleteProgram(this->shader_program_log);
   }
-  if (glIsBuffer(this->VBO)) glDeleteBuffers(1, &this->VBO);
-  if (glIsBuffer(this->UBO)) glDeleteBuffers(1, &this->UBO);
+  if (glIsProgram(this->shader_program_triad)) {
+    glUseProgram(0);
+    glDeleteProgram(this->shader_program_triad);
+  }
+  if (glIsBuffer(this->VBO)) { glDeleteBuffers(1, &this->VBO); }
+  if (glIsBuffer(this->UBO)) { glDeleteBuffers(1, &this->UBO); }
+  if (glIsBuffer(this->triad_VBO)) { glDeleteBuffers(1, &this->triad_VBO); }
 }
 
 GLuint Renderer::compile_shader(GLenum type, const char *path) {
@@ -250,7 +273,7 @@ GLuint Renderer::compile_shader(GLenum type, const char *path) {
   const char *src = srcStr.c_str();
 
   GLuint shader = glCreateShader(type);
-  glShaderSource(shader, 1, &src, NULL);
+  glShaderSource(shader, 1, &src, nullptr);
   glCompileShader(shader);
 
   // Error checking
@@ -269,8 +292,8 @@ GLuint Renderer::compile_shader(GLenum type, const char *path) {
 
 GLuint Renderer::create_shader_program(const char *vertexPath,
                                      const char *fragmentPath) {
-  GLuint vs = compile_shader(GL_VERTEX_SHADER, vertexPath);
-  GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fragmentPath);
+  GLuint vs = this->compile_shader(GL_VERTEX_SHADER, vertexPath);
+  GLuint fs = this->compile_shader(GL_FRAGMENT_SHADER, fragmentPath);
 
   GLuint program = glCreateProgram();
   glAttachShader(program, vs);

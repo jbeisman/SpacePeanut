@@ -57,35 +57,35 @@ void Camera::update_drag(const glm::vec2 &mouse_pos,
 
 void Camera::update_zoom(float scroll_offset) {
 
-    double current_time = SDL_GetTicks();
-    double time_delta = current_time - last_zoom_time;
+  double current_time = SDL_GetTicks();
+  double time_delta = current_time - last_zoom_time;
 
-    if (time_delta > zoom_reset_threshold) {
-        zoom_acceleration = 1.0f;
-    }
-    else {
-        zoom_acceleration += zoom_acceleration_rate;
-    }
+  if (time_delta > zoom_reset_threshold) {
+    zoom_acceleration = 1.0f;
+  }
+  else {
+    zoom_acceleration += zoom_acceleration_rate;
+  }
 
-    zoom_acceleration = std::min(zoom_acceleration, max_zoom_acceleration);
+  zoom_acceleration = std::min(zoom_acceleration, max_zoom_acceleration);
 
-    glm::vec3 view_dir = get_view_direction();
-    glm::vec3 current_pos = get_cam_pos();
-    glm::vec3 look_at_pos = get_LookAt();
-    float distance = glm::distance(current_pos, look_at_pos);
+  glm::vec3 view_dir = get_view_direction();
+  glm::vec3 current_pos = get_cam_pos();
+  glm::vec3 look_at_pos = get_LookAt();
+  float distance = glm::distance(current_pos, look_at_pos);
 
-    float zoom_amount = scroll_offset * zoom_sensitivity * zoom_acceleration;
-    float new_distance = distance - zoom_amount;
+  float zoom_amount = scroll_offset * zoom_sensitivity * zoom_acceleration;
+  float new_distance = distance - zoom_amount;
 
-    const float min_zoom_distance = 3.0f;
-    if (new_distance < min_zoom_distance) {
-        new_distance = min_zoom_distance;
-    }
+  const float min_zoom_distance = 3.0f;
+  if (new_distance < min_zoom_distance) {
+    new_distance = min_zoom_distance;
+  }
 
-    glm::vec3 new_position = look_at_pos - view_dir * new_distance;
-    set_camera_view(new_position);
+  glm::vec3 new_position = look_at_pos - view_dir * new_distance;
+  set_camera_view(new_position);
 
-    last_zoom_time = current_time;
+  last_zoom_time = current_time;
 }
 
 void Camera::set_camera_view(glm::vec3 eye) {
@@ -111,3 +111,9 @@ glm::vec3 Camera::get_view_direction() const {
 glm::vec3 Camera::get_right_vec() const {
   return glm::transpose(view_matrix)[0];
 }
+glm::mat4 Camera::get_rotation_matrix() const {
+  glm::mat4 rotation = view_matrix; // rotation matrix is in top 3x3 of view matrix
+  rotation[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // replace translation column
+  return rotation;
+}
+

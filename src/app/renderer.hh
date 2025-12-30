@@ -1,15 +1,17 @@
 
 #pragma once
 
-#include "color_palette.hh"
-#include "camera.hh"
-#include "simulator.hh"
-
 #include <fstream>
 #include <memory>
 #include <vector>
 
+#include "color_palette.hh"
+#include "camera.hh"
+#include "simulator.hh"
+
 #include <GL/glew.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 class Renderer {
 public:
@@ -18,11 +20,13 @@ public:
   void init(double RSHIFT, int NSTEPS, int NBODS, int NGRID, float GMAX);
   void change_color(Color::ColorType color);
   void update(float evolution_speed, bool reverse_time);
-  void display(float aspect_ratio, float mass_clip_factor, bool log_scale) const;
+  void display(float aspect_ratio, float mass_clip_factor, bool log_scale);
   void reset_simulator();
   Camera camera;
   double current_redshift;
 private:
+  void generate_triad(float gmax);
+  void display_triad();
   GLuint compile_shader(GLenum type, const char *path);
   GLuint create_shader_program(const char *vertexPath, const char *fragmentPath);
   std::unique_ptr<ParticleMeshSimulator> simulator;
@@ -34,15 +38,19 @@ private:
   std::vector<glm::vec3> color_map;
   GLuint shader_program_log;
   GLuint shader_program_lin;
+  GLuint shader_program_triad;
   GLuint texture_3D;
   GLuint texture_color;
   GLuint VAO;
   GLuint VBO;
   GLuint UBO;
+  GLuint triad_VAO;
+  GLuint triad_VBO;
   GLuint grid_origin_loc;
   GLuint grid_size_loc;
   GLuint density_min_loc;
   GLuint density_max_loc;
   GLuint density_texture_loc;
   GLuint color_texture_loc;
+  glm::mat4 triad_view_matrix;
 };

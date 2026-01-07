@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <tuple>
+#include <bit>
 
 namespace grid_util {
 
@@ -13,7 +14,8 @@ template <int N> inline int grid_index_3d_to_1d(int i, int j, int k) {
   // Valid only for N == power of two
   // Assumes row-major storage
   constexpr int MASK = N - 1;
-  return ((i + N) & MASK) * N * N + ((j + N) & MASK) * N + ((k + N) & MASK);
+  constexpr int p = std::countr_zero((unsigned int)N); // p from N = 2^p
+  return ( ((i + N) & MASK) << (2 * p) ) + ( ((j + N) & MASK) << p ) + ((k + N) & MASK);
 }
 
 // Runtime version used when N != power of two

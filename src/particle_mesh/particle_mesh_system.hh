@@ -32,5 +32,5 @@ private:
   std::vector<std::array<short int, 3>> fft_i;                      // triple short int index for fft  (NGRID * NGRID * NGRID_HALF)
   std::vector<std::array<short int, 3>> grid_i;                     // triple short int index for grid (NGRID * NGRID * NGRID)
   std::unique_ptr<fft_util::Plans> fft_plans;                       // struct containing fftw3 plans
-  std::unique_ptr<GridConst> grid;                                  // grid metadata
+  GridConst grid;                                                   // grid metadata
 };

@@ -5,11 +5,11 @@
 // Compute and store constant grid information
 struct GridConst {
   GridConst(int ngrid, float gmax);
-  GridConst() = delete;
-  const int NGRID;      // number of cells in 1D - N from NxNxN
-  const float GMAX;     // grid 1D length
-  const float CLEN;     // cell length
-  const int NGRID_HALF; // half-ish of NGRID  --  NGRID / 2 + 1
+  GridConst() = default;
+  int NGRID;      // number of cells in 1D - N from NxNxN
+  float GMAX;     // grid 1D length
+  float CLEN;     // cell length
+  int NGRID_HALF; // half-ish of NGRID  --  NGRID / 2 + 1
 };
 
 // Cloud-in-cell particle <--> grid

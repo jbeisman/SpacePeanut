@@ -38,7 +38,10 @@ void compute_grid_potential(
   fftwf_execute(fft_plans->c2r_plan);
 
   // Normalize the potential field after inverse DFT
+  // fun
   const float normfactor = std::numbers::pi_v<float> / static_cast<float>(NG * NG * NG);
+  // correct
+  //const float normfactor = 1.0f / static_cast<float>(NG * NG * NG);
   mult_vec(gPot, normfactor);
 }
 

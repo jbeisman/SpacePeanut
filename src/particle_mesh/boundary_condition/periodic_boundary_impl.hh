@@ -11,7 +11,6 @@ void enforce_periodic_boundary_conditions_par(
 
 // Periodic BC logic
 inline float boundary_condition(float GMAX, float pX) {
-  return (pX < 0.0)    ? fmod(GMAX + fmod(pX, GMAX), GMAX)
-         : (pX > GMAX) ? fmod(GMAX + fmod(pX, GMAX), GMAX)
-                       : pX;
+  return  (pX < 0.0)  ? fmod(GMAX + fmod(pX, GMAX), GMAX) :
+          (pX > GMAX) ? fmod(GMAX + fmod(pX, GMAX), GMAX) : pX;
 }

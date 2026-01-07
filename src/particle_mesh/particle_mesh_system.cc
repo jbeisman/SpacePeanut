@@ -5,6 +5,7 @@
 #include "parallel_utils.hh"
 #include "periodic_boundary.hh"
 #include "utils.hh"
+#include "lambdaCDM.hh"
 #include <cmath>
 
 ParticleMeshSystem::ParticleMeshSystem(const int nbods, const int ngrid,

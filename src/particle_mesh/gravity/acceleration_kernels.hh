@@ -17,34 +17,33 @@ inline void kernel_grid_mass_CIC(float CVOL_INV,
   // Get cloud-in-cell weights (6 float) and indices (3 int)
   auto [fX, fY, fZ, fXX, fYY, fZZ, iX, iY, iZ] =
       GridCIC::get_weights_and_indices(pos);
-  
   // Distribute particle mass to 8 grid cells in stencil
   // 10.0 represents constant mass   TODO -- improve mass handling
-  gMD[GridIDX::flatten(iX  , iY  , iZ  )] += (10.0 * fX  * fY  * fZ  * CVOL_INV);
-  gMD[GridIDX::flatten(iX+1, iY  , iZ  )] += (10.0 * fXX * fY  * fZ  * CVOL_INV);
-  gMD[GridIDX::flatten(iX  , iY+1, iZ  )] += (10.0 * fX  * fYY * fZ  * CVOL_INV);
-  gMD[GridIDX::flatten(iX  , iY  , iZ+1)] += (10.0 * fX  * fY  * fZZ * CVOL_INV);
-  gMD[GridIDX::flatten(iX+1, iY+1, iZ  )] += (10.0 * fXX * fYY * fZ  * CVOL_INV);
-  gMD[GridIDX::flatten(iX+1, iY  , iZ+1)] += (10.0 * fXX * fY  * fZZ * CVOL_INV);
-  gMD[GridIDX::flatten(iX  , iY+1, iZ+1)] += (10.0 * fX  * fYY * fZZ * CVOL_INV);
-  gMD[GridIDX::flatten(iX+1, iY+1, iZ+1)] += (10.0 * fXX * fYY * fZZ * CVOL_INV);
+  gMD[GridIDX::flatten(iX  , iY  , iZ  )] += (fX  * fY  * fZ  * CVOL_INV);
+  gMD[GridIDX::flatten(iX+1, iY  , iZ  )] += (fXX * fY  * fZ  * CVOL_INV);
+  gMD[GridIDX::flatten(iX  , iY+1, iZ  )] += (fX  * fYY * fZ  * CVOL_INV);
+  gMD[GridIDX::flatten(iX  , iY  , iZ+1)] += (fX  * fY  * fZZ * CVOL_INV);
+  gMD[GridIDX::flatten(iX+1, iY+1, iZ  )] += (fXX * fYY * fZ  * CVOL_INV);
+  gMD[GridIDX::flatten(iX+1, iY  , iZ+1)] += (fXX * fY  * fZZ * CVOL_INV);
+  gMD[GridIDX::flatten(iX  , iY+1, iZ+1)] += (fX  * fYY * fZZ * CVOL_INV);
+  gMD[GridIDX::flatten(iX+1, iY+1, iZ+1)] += (fXX * fYY * fZZ * CVOL_INV);
 }
 
 // Solve Poisson's equation for gravitational potential in Fourier Space
 inline void kernel_grid_potential(int NG, int NGH, float kfac, int i, int j,
                                   int k, fftwf_complex *fMass) {
-  
-  // Frequency domain requires indices to fall into [-NGRID/2, NGRID/2]
+  // Frequency domain aliasing
   int wX = (i < NGH) ? i : i - NG;
   int wY = (j < NGH) ? j : j - NG;
+  int wZ = k;
 
   // Compute wave numbers
-  float k_squared = (wX * wX + wY * wY + k * k) * kfac;
+  float k_squared = static_cast<float>(wX * wX + wY * wY + wZ * wZ);
   float k_squared_inv = 
-    (k_squared < std::numeric_limits<float>::epsilon()) ? 0.0f : 1.0f / k_squared;
+    (k_squared < std::numeric_limits<float>::epsilon()) ? 0.0f : kfac / k_squared;
 
   // Compute potential in Fourier space
-  int fft_idx = i * NG * NGH + j * NGH + k;
+  int fft_idx = (i * NG  + j) * NGH + k;
   fMass[fft_idx][0] *= k_squared_inv;
   fMass[fft_idx][1] *= k_squared_inv;
 }

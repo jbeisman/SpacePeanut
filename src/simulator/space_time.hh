@@ -14,9 +14,9 @@ public:
   void update_time(double dt);
   void update_dt(double new_dt);
 private:
-  double redshft_z{0.0f};
+  double redshft_z{0.0};
   int nsteps{0};
   double time{0.0};
   double t0{0.0};
-  double dt{0.0f};
+  double dt{0.0};
 };

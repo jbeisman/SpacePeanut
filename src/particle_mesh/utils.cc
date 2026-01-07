@@ -26,11 +26,3 @@ void initialize_random(std::vector<std::array<float, 3>> &Vec,
     elem[2] = distribution(generator);
   }
 }
-
-float compute_H(const float a) {
-  constexpr float H0 = 0.67321 * 100.0;
-  constexpr float omega_lambda = 0.6842;
-  constexpr float omega_m = 0.3158;
-  constexpr float omega_k = 1.0 - omega_m - omega_lambda;
-  return H0 * sqrtf(omega_lambda + omega_m / (a * a * a) + omega_k / (a * a));
-}

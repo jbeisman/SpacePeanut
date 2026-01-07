@@ -51,8 +51,6 @@ inline auto GridCIC::get_weights_and_indices(const std::array<float, 3> &pPos) {
 
 inline int GridIDX::flatten(int i, int j, int k) {
   // Flatten 3D index from NxNxN grid into 1D linear index
-  // grid_index_3d_to_1d<N> must be explicitly instantiated for each N listed
-  // here
   switch (GridIDX::NGRID) {
   case 32:
     return grid_util::grid_index_3d_to_1d<32>(i, j, k);

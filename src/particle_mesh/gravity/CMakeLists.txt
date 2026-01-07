@@ -3,11 +3,13 @@ cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 # List of source files
 set(PM_GRAV_CC_FILES
 	acceleration.cc
+	lambdaCDM.cc
 )
 
 # List of header files
 set(PM_GRAV_PUBLIC_HH_FILES
 	acceleration.hh
+	lambdaCDM.hh
 )
 
 if(USE_STD_PARALLEL)
